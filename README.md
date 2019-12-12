@@ -21,4 +21,4 @@ The repository also contains examples of python scripts which can be used to cal
 
 An example of results produced with the code can be found in [Chen et al. (2019)](https://ui.adsabs.harvard.edu/abs/2019ApJ...877...90C/abstract).
 
-The code uses source files from [LINPACK](https://people.sc.fsu.edu/~jburkardt/cpp_src/linpack/linpack.html) and  [https://github.com/ttk592/spline/](https://github.com/ttk592/spline/).
+The code uses source files from [LINPACK](https://people.sc.fsu.edu/~jburkardt/cpp_src/linpack/linpack.html) and  [https://github.com/ttk592/spline/](https://github.com/ttk592/spline/) repositories.
