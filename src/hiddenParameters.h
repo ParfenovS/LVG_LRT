@@ -21,11 +21,11 @@
 #define MON_FUN_LOWER_LIMIT 1.e-3                       // the lower limit for the monitor function used to control the time step for integration over time (see Jannelli & Fazio 2006, Journal of Computational and Applied Mathematics, 191, 246)
 #define MON_FUN_UPPER_LIMIT 1.e-2                       // the upper limit for the monitor function used to control the time step for integration over time
 #define TIME_INTEGRATION_OF_KINETIC_EQUATIONS false     // if false the code will solve statistical equilibrium equations; if true the code will integrate kinetic equations for populations over time
-#define USE_PARTITION_FUNCTIONS_RATIO true              // if true then the sum of populations will not be equal to 1.0 but will be equal to the ratio of full and partial partition functions (see Sobolev & Deguchi 1994); the full partition function is defined below
+#define USE_PARTITION_FUNCTIONS_RATIO false              // if true then the sum of populations will not be equal to 1.0 but will be equal to the ratio of full and partial partition functions (see Sobolev & Deguchi 1994); the full partition function is defined below
 //
 //#define PARTITION_FUNCTION 1.0
 //#define PARTITION_FUNCTION (0.64 * pow(modelPhysPars::Tks, 1.5))          // CH3OH full partition rotational function (this is an approximation based on the data from CDMS database)
 //#define PARTITION_FUNCTION (0.167 * pow(modelPhysPars::Tks, 1.92))        // 13CH3OH full partition rotational function
-//#define PARTITION_FUNCTION (0.38 * pow(modelPhysPars::Tks, 1.76))         // H2CO full partition rotational function
+#define PARTITION_FUNCTION (0.38 * pow(modelPhysPars::Tks, 1.76))         // H2CO full partition rotational function
 //#define PARTITION_FUNCTION (0.03087 * pow(modelPhysPars::Tks, 1.48437))   // HDO full partition rotational function (this is an approximation based on the data from JPL database)
-#define PARTITION_FUNCTION (1.72916 * pow(modelPhysPars::Tks, 1.47515))     // HNCO full partition rotational function
+//#define PARTITION_FUNCTION (1.72916 * pow(modelPhysPars::Tks, 1.47515))     // HNCO full partition rotational function
