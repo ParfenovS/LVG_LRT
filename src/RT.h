@@ -143,7 +143,7 @@ protected:
 			beta_S = 0.5 * emiss * modelPhysPars::NdV / (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
 		}
 
-		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt + \\
+		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt +
 							  dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.betaHII_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII + 
 							  (1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.betaHII_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII; 	// sum of internal and external radiation mean intensities
 	}
