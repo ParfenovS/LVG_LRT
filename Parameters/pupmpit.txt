@@ -4,9 +4,9 @@ Results/Pn.txt
 Results/J_emission.txt
 # Name of file with physical conditions:
 Parameters/PhysicalConditions.txt
-# Name of LAMDA file with with molecular data:
-rabli_e.dat
-# Random seed (if negative then the seed isa curent time)
+# Name of LAMDA file with molecular data:
+oh2co-h2.dat
+# Random seed (if negative then the seed is a current time)
 1
 # Number of cycles to search
 1000
