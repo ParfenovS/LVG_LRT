@@ -1,0 +1,20 @@
+# Initial solution:
+# 0 - from file; 1 - optically thin; 2 - LTE
+2
+# Name of file with initial solution (can be empty):
+Results/Pn.txt
+# Name of file with final solution (can be empty):
+Results/Pn.txt
+# Name of LAMDA file with with molecular data:
+oh2co-h2.dat
+# Stopping criteria:
+# maximum relative population		| maximum number of
+# difference or length of Dpop/Dt vector| iterations or time steps
+1.e-10				  	  10000
+#
+# beamH, beaming for optical depth parallel to the line of sight
+# this is eps^-1 = D(ln r) / D(ln V) quantity given in e.g. Sobolev et al. 1997, Cragg et al. 2005
+1.0
+#
+# line width [km/s] and line profile shape; this is used to account for line overlapping; if line width <=0 overlapping will not be taken into account; r - rectangular line profile, g - Gaussian line profile
+2.0 r

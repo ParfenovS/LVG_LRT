@@ -1,0 +1,14 @@
+# Name of file with popualtions:
+Results/Pn.txt
+# Name of file with mean intensities:
+Results/J_emission.txt
+# Name of file with physical conditions:
+Parameters/PhysicalConditions.txt
+# Name of LAMDA file with with molecular data:
+rabli_e.dat
+# Random seed (if negative then the seed isa curent time)
+1
+# Number of cycles to search
+1000
+# Close levels? (0 - no, 1 -yes)
+1

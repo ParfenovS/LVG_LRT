@@ -1,0 +1,9 @@
+# Gas kinetic temperature, K
+220
+# Molecular hydrogen density, nH_2, cm^-3
+160000.0
+# Specific column density, cm^-3 s
+5e+12
+# Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile:
+0.25
+0.75
