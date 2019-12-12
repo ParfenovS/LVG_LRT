@@ -5,7 +5,7 @@
 Results/Pn.txt
 # Name of file with final solution (can be empty):
 Results/Pn.txt
-# Name of LAMDA file with with molecular data:
+# Name of LAMDA file with molecular data:
 oh2co-h2.dat
 # Stopping criteria:
 # maximum relative population		| maximum number of
