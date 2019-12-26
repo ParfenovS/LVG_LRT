@@ -188,7 +188,7 @@ public:
 	
 	MonteCarloSearchCycles() noexcept
 	{
-		seed = time(NULL);
+		seed = static_cast<unsigned int>(time(NULL));
 		close_levels = true;
 		num_of_cycles = 500;
 		MAX_STEPS = 1;
@@ -198,8 +198,8 @@ public:
 
 	MonteCarloSearchCycles(const int &seed, const size_t &num_of_cycles, const int &close_levels)
 	{
-		if (seed < 0) this->seed = time(NULL);
-		else this->seed = seed;
+		if (seed < 0) this->seed = static_cast<unsigned int>(time(NULL));
+		else this->seed =seed;
 		if (num_of_cycles<=0) this->num_of_cycles = 500;
 		else this->num_of_cycles = num_of_cycles;
 		if (close_levels == 0) this->close_levels = false;
