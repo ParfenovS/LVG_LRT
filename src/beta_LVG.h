@@ -34,7 +34,7 @@ private:
 		do {
 			step = 1.0 / n;
 			for (unsigned int i = 1; i <= n/2; i++) {
-				y = (2 * i - 1) * step;
+				y = (2. * i - 1.) * step;
 				sum += integrand(y);
 			}
 			F = sum * step;
