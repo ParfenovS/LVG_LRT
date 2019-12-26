@@ -5,24 +5,20 @@
 void output_results(molModel *mod, const string & filename) 	// output results of radiative transfer calculations into files
 {
 	FILE *fout;
-	errno_t err;
 
 	if (filename.length() > 1) {
-		err = fopen_s(&fout, filename.c_str(), "w");
-		if (err !=0 ) throw runtime_error("can't open file to save populations");
+		fout = fopen(filename.c_str(), "w");
 		for (size_t i = 0; i < mod->levels.size(); i++)
 			fprintf(fout, "%ld %.17e\n", mod->levels[i].id, mod->levels[i].pop);
 		fclose(fout);
 	}
 
-	err = fopen_s(&fout, "Results/J_emission.txt", "w");
-	if (err != 0) throw runtime_error("can't open file to save mean intensity");
+	fout = fopen("Results/J_emission.txt", "w");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++)
 		fprintf(fout, "%ld %ld\t%.17e\n", mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1, mod->rad_trans[i].J);
 	fclose(fout);
 
-	err = fopen_s(&fout, "Results/tau.txt", "w");
-	if (err != 0) throw runtime_error("can't open file to save optical depths");
+	fout = fopen("Results/tau.txt", "w");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t tau \t Excitation temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		fprintf(fout, "%ld \t %ld -> %ld \t ", mod->rad_trans[i].trans_id, mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1);
@@ -30,8 +26,7 @@ void output_results(molModel *mod, const string & filename) 	// output results o
 	}
 	fclose(fout);
 
-	err = fopen_s(&fout, "Results/Tb.txt", "w");
-	if (err != 0) throw runtime_error("can't open file to save brightness temperature");
+	fout = fopen("Results/Tb.txt", "w");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t Brightness temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		fprintf(fout, "%ld \t %ld -> %ld \t ", mod->rad_trans[i].trans_id, mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1);
@@ -39,8 +34,7 @@ void output_results(molModel *mod, const string & filename) 	// output results o
 	}
 	fclose(fout);
 
-	err = fopen_s(&fout, "Results/masers.txt", "w");
-	if (err != 0) throw runtime_error("can't open file to save maser transitions");
+	fout = fopen("Results/masers.txt", "w");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t tau \t Brightness temperature \t Excitation temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		if (mod->rad_trans[i].tau < -0.01) {
