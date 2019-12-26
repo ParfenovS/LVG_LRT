@@ -101,9 +101,9 @@ public:
 			}
 		}
 
-		double MaxRPopDiff;
+		double MaxRPopDiff = 0.0;
 		double F_norm;
-		size_t levelWithMaxRPopDiff;
+		size_t levelWithMaxRPopDiff = 0;
 
 		double *A = new double[nlevs*nlevs];	// reserve space for matrix from the non-linear system of equations A*X=B obtained at each step of integration over time
 		double *pop = new double[nlevs];
