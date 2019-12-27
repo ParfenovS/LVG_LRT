@@ -63,6 +63,7 @@ protected:
 	void initial_solution()									// return LTE or optically thin initial solution if populations haven't been read from file, i.e. if the population of the first and last levels < 0
 	{
 		double temperature = 1.e-30;
+		double pops_sum = 0.0;
 
 		partition_function_ratio = 0.0; 	// partition function calculated for a given set of levels (the full, actual partition function should include all levels)
 		for (size_t i = mol->levels.size(); i-- > 0; ) partition_function_ratio += mol->levels[i].g * exp( -SPEED_OF_LIGHT*PLANK_CONSTANT*mol->levels[i].E / (BOLTZMANN_CONSTANT*modelPhysPars::Tks) );
@@ -74,7 +75,10 @@ protected:
 				if (mol->levels[0].pop < 0.e0 || mol->levels[mol->levels.size() - 1].pop < 0.e0) throw runtime_error("file with initial solution haven't been read");
 				for (size_t i = 0; i < mol->levels.size(); i++)	{
 					mol->levels[i].pop = max(MIN_POP, mol->levels[i].pop);
+					pops_sum += mol->levels[i].pop;
 				}
+				pops_sum = partition_function_ratio / pops_sum;
+				for (size_t i = 0; i < mol->levels.size(); i++)	mol->levels[i].pop *= pops_sum;
 				return;
 				break;
 			case 1: 	// optically thin case
@@ -143,7 +147,7 @@ protected:
 			beta_S = 0.5 * emiss * modelPhysPars::NdV / (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
 		}
 
-		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt +
+		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt + 
 							  dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.betaHII_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII + 
 							  (1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.betaHII_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII; 	// sum of internal and external radiation mean intensities
 	}
