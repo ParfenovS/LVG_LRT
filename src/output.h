@@ -8,17 +8,20 @@ void output_results(molModel *mod, const string & filename) 	// output results o
 
 	if (filename.length() > 1) {
 		fout = fopen(filename.c_str(), "w");
+		if (fout == NULL) throw runtime_error("can't open file to save populations");
 		for (size_t i = 0; i < mod->levels.size(); i++)
 			fprintf(fout, "%ld %.17e\n", mod->levels[i].id, mod->levels[i].pop);
 		fclose(fout);
 	}
 
 	fout = fopen("Results/J_emission.txt", "w");
+	if (fout == NULL) throw runtime_error("can't open file to save mean intensity");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++)
 		fprintf(fout, "%ld %ld\t%.17e\n", mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1, mod->rad_trans[i].J);
 	fclose(fout);
 
 	fout = fopen("Results/tau.txt", "w");
+	if (fout == NULL) throw runtime_error("can't open file to save optical depths");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t tau \t Excitation temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		fprintf(fout, "%ld \t %ld -> %ld \t ", mod->rad_trans[i].trans_id, mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1);
@@ -27,6 +30,7 @@ void output_results(molModel *mod, const string & filename) 	// output results o
 	fclose(fout);
 
 	fout = fopen("Results/Tb.txt", "w");
+	if (fout == NULL) throw runtime_error("can't open file to save brightness temperature");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t Brightness temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		fprintf(fout, "%ld \t %ld -> %ld \t ", mod->rad_trans[i].trans_id, mod->rad_trans[i].up_level+1, mod->rad_trans[i].low_level+1);
@@ -35,6 +39,7 @@ void output_results(molModel *mod, const string & filename) 	// output results o
 	fclose(fout);
 
 	fout = fopen("Results/masers.txt", "w");
+	if (fout == NULL) throw runtime_error("can't open file to save maser transitions");
 	fprintf(fout, "#id \t up->low \t freq., GHz \t tau \t Brightness temperature \t Excitation temperature\n");
 	for (size_t i = 0; i < mod->rad_trans.size(); i++) {
 		if (mod->rad_trans[i].tau < -0.01) {
