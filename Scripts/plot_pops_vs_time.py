@@ -17,8 +17,8 @@ for i in range(1, len(recs['time'])):
 	timestep.append( recs['time'][i] - recs['time'][i-1])
 timestep = np.array(timestep)
 
-plt.plot(np.log10(recs['time'][1:]), np.log10(recs['pops'][1:,1827]), label="level id = 1828")
-plt.plot(np.log10(recs['time'][1:]), np.log10(recs['pops'][1:,624]), label="level id = 625")
+plt.plot(np.log10(recs['time'][1:]), np.log10(recs['pops'][1:,0]), label="level id = 1")
+plt.plot(np.log10(recs['time'][1:]), np.log10(recs['pops'][1:,2]), label="level id = 3")
 
 plt.legend()
 plt.show()
