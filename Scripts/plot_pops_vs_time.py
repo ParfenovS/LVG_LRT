@@ -3,7 +3,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
+#f = open(sys.argv[1])
 f = open('pops_vs_time.bin')
 num_of_levs = np.fromfile(f, dtype=np.dtype('u8'), count=1)
 num_of_levs = int(num_of_levs[0])
