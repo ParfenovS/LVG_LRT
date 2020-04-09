@@ -58,16 +58,19 @@ public:
 	int radiative_transfer() override		// main function which should be called to perform radiative transfer calculations
 	{
 		const size_t nlevs = mol->levels.size();
+		const size_t ntrans = mol->rad_trans.size();
 
 		// prepare to output the dependence of level populations on time into the binary file
-		ofstream binpopfile;
+		ofstream binpopfile, binTbrfile, binTexfile;
 		if (cerr_output_iter_progress) {
 			binpopfile.open("pops_vs_time.bin", ios::out | ios::binary);
 			binpopfile.write(reinterpret_cast<const char*>(&nlevs), sizeof(size_t));
+			binTbrfile.write(reinterpret_cast<const char*>(&ntrans), sizeof(size_t));
+			binTexfile.write(reinterpret_cast<const char*>(&ntrans), sizeof(size_t));
 		}
 
 		// set the external emission mean intensity, optical depth, absorption and emission coefficients
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+		for (size_t i = 0; i < ntrans; i++) {
 			mol->rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mol->rad_trans[i].nu); //external emission from dust, cosmic microwave background or file
 			mol->rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mol->rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
 			mol->rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mol->rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
@@ -96,8 +99,20 @@ public:
 				oldpops_time[i].push_back(mol->levels[i].pop);
 			}
 			if (cerr_output_iter_progress) {
-				double temp_pop = oldpops_time[i][0];
-				binpopfile.write(reinterpret_cast<const char*>(&temp_pop), sizeof(double));
+				double temp_var = oldpops_time[i][0];
+				binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+			}
+		}
+
+		if (cerr_output_iter_progress) {
+			binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+			binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+			prepare_results_for_output(LVG_beta);
+			for (size_t i = 0; i < ntrans; i++) {
+				double temp_var = mol->rad_trans[i].Tbr;
+				binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+				temp_var = mol->rad_trans[i].Tex;
+				binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 			}
 		}
 
@@ -157,7 +172,11 @@ public:
 				} else {
 					delete[] A; delete[] pop; delete[] dpop_dt;
 					oldpops_Ng.clear(); oldpops_time.clear();
-					if (cerr_output_iter_progress) binpopfile.close();
+					if (cerr_output_iter_progress) {
+						binpopfile.close();
+						binTbrfile.close();
+						binTexfile.close();
+					}
 					cerr << "#error: cant decrease timestep more, info = " << there_were_bad_levels << "," << solveStatEqSuccess << endl;
 					return 1;
 				}
@@ -176,10 +195,21 @@ public:
 					oldpops_time[i][1] = oldpops_time[i][0];
 					oldpops_time[i][0] = mol->levels[i].pop;
 					if (cerr_output_iter_progress) {
-						double temp_pop = oldpops_time[i][0];
-						binpopfile.write(reinterpret_cast<const char*>(&temp_pop), sizeof(double));
+						double temp_var = oldpops_time[i][0];
+						binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 					}
 					mol->levels[i].pop += dpop_dt[i] * h;
+				}
+				if (cerr_output_iter_progress) {
+					binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+					binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+					prepare_results_for_output(LVG_beta);
+					for (size_t i = 0; i < ntrans; i++) {
+						double temp_var = mol->rad_trans[i].Tbr;
+						binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+						temp_var = mol->rad_trans[i].Tex;
+						binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+					}
 				}
 				rn = h / h_old;
 				BDF_coeffs[0] = (1+2*rn)/(1+rn); BDF_coeffs[1] = -(1+rn); BDF_coeffs[2] = rn*rn/(1+rn);
@@ -188,7 +218,11 @@ public:
 
 		delete[] A; delete[] pop; delete[] dpop_dt;
 		oldpops_Ng.clear(); oldpops_time.clear();
-		if (cerr_output_iter_progress) binpopfile.close();
+		if (cerr_output_iter_progress) {
+			binpopfile.close();
+			binTbrfile.close();
+			binTexfile.close();
+		}
 
 		if (ntimesteps == maxNumberOfIterations) cerr << "#warning: maximum number of time steps has been exceeded " << "n= " << F_norm << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 
