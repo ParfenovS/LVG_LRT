@@ -61,12 +61,16 @@ public:
 		const size_t ntrans = mol->rad_trans.size();
 
 		// prepare to output the dependence of level populations on time into the binary file
-		ofstream binpopfile, binTbrfile, binTexfile;
+		ofstream binpopfile, binTbrfile, binTexfile, bintaufile;
 		if (cerr_output_iter_progress) {
 			binpopfile.open("pops_vs_time.bin", ios::out | ios::binary);
+			binTbrfile.open("Tbr_vs_time.bin", ios::out | ios::binary);
+			binTexfile.open("Tex_vs_time.bin", ios::out | ios::binary);
+			bintaufile.open("tau_vs_time.bin", ios::out | ios::binary);
 			binpopfile.write(reinterpret_cast<const char*>(&nlevs), sizeof(size_t));
 			binTbrfile.write(reinterpret_cast<const char*>(&ntrans), sizeof(size_t));
 			binTexfile.write(reinterpret_cast<const char*>(&ntrans), sizeof(size_t));
+			bintaufile.write(reinterpret_cast<const char*>(&ntrans), sizeof(size_t));
 		}
 
 		// set the external emission mean intensity, optical depth, absorption and emission coefficients
@@ -107,12 +111,15 @@ public:
 		if (cerr_output_iter_progress) {
 			binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 			binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+			bintaufile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 			prepare_results_for_output(LVG_beta);
 			for (size_t i = 0; i < ntrans; i++) {
 				double temp_var = mol->rad_trans[i].Tbr;
 				binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 				temp_var = mol->rad_trans[i].Tex;
 				binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+				temp_var = mol->rad_trans[i].tau;
+				bintaufile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 			}
 		}
 
@@ -176,6 +183,7 @@ public:
 						binpopfile.close();
 						binTbrfile.close();
 						binTexfile.close();
+						bintaufile.close();
 					}
 					cerr << "#error: cant decrease timestep more, info = " << there_were_bad_levels << "," << solveStatEqSuccess << endl;
 					return 1;
@@ -203,12 +211,15 @@ public:
 				if (cerr_output_iter_progress) {
 					binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 					binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
+					bintaufile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 					prepare_results_for_output(LVG_beta);
 					for (size_t i = 0; i < ntrans; i++) {
 						double temp_var = mol->rad_trans[i].Tbr;
 						binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 						temp_var = mol->rad_trans[i].Tex;
 						binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+						temp_var = mol->rad_trans[i].tau;
+						bintaufile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 					}
 				}
 				rn = h / h_old;
@@ -222,6 +233,7 @@ public:
 			binpopfile.close();
 			binTbrfile.close();
 			binTexfile.close();
+			bintaufile.close();
 		}
 
 		if (ntimesteps == maxNumberOfIterations) cerr << "#warning: maximum number of time steps has been exceeded " << "n= " << F_norm << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
