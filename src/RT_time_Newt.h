@@ -154,6 +154,7 @@ public:
 			bool solution_failed = false;
 			double pop_norm = 1.e-30;
 			size_t solveStatEqSuccess = 0;
+			double MaxRPopDiff_at_prev_iter = 0.0;
 			do {							// solve non-linear system of equations at a given time step with Newton method
 				F_norm = populate_matrix_vector(A, pop, Jac, LVG_beta, oldpops_time, BDF_coeffs, h, dpop_dt);
 				solveStatEqSuccess = solve_eq_sys(A, pop);	// solve linear system of equations with LU decomposition, solution is stored in pop
@@ -169,11 +170,12 @@ public:
 						cerr << iter_in << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 					}
 				}
-				if ( there_were_bad_levels || solveStatEqSuccess != 0 ) {
+				if ( there_were_bad_levels || solveStatEqSuccess != 0 || fabs(MaxRPopDiff_at_prev_iter - MaxRPopDiff) / MaxRPopDiff < 0.01) {
 					solution_failed = true;
 					break;
 				}
 				iter_in += 1;
+				MaxRPopDiff_at_prev_iter = MaxRPopDiff;
 			} while (MaxRPopDiff > MAX_LOCAL_ACCURACY && iter_in < MAX_NUM_INNER_STEPS);
 			double monitor_function = 1.e30;
 			if (!solution_failed && iter_in < MAX_NUM_INNER_STEPS) {
@@ -216,15 +218,6 @@ public:
 				if (monitor_function < MON_FUN_LOWER_LIMIT) {
 					h = min(MAX_TIME_STEP, h * TIME_STEP_INCREASE_FAC);
 				}
-				for (size_t i = 0; i < nlevs; i++) {
-					oldpops_time[i][1] = oldpops_time[i][0];
-					oldpops_time[i][0] = mol->levels[i].pop;
-					if (cerr_output_iter_progress) {
-						double temp_var = oldpops_time[i][0];
-						binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
-					}
-					mol->levels[i].pop += dpop_dt[i] * h;
-				}
 				if (cerr_output_iter_progress) {
 					binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 					binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
@@ -238,6 +231,15 @@ public:
 						temp_var = mol->rad_trans[i].tau;
 						bintaufile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 					}
+				}
+				for (size_t i = 0; i < nlevs; i++) {
+					oldpops_time[i][1] = oldpops_time[i][0];
+					oldpops_time[i][0] = mol->levels[i].pop;
+					if (cerr_output_iter_progress) {
+						double temp_var = oldpops_time[i][0];
+						binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
+					}
+					mol->levels[i].pop += dpop_dt[i] * h;
 				}
 				rn = h / h_old;
 				BDF_coeffs[0] = (1+2*rn)/(1+rn); BDF_coeffs[1] = -(1+rn); BDF_coeffs[2] = rn*rn/(1+rn);
