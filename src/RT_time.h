@@ -10,8 +10,9 @@ private:
 		binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 		bintaufile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 		prepare_results_for_output(LVG_beta);
+		double temp_var = 0.0;
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			double temp_var = mol->rad_trans[i].Tbr;
+			temp_var = mol->rad_trans[i].Tbr;
 			binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 			temp_var = mol->rad_trans[i].Tex;
 			binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
