@@ -14,7 +14,7 @@
 
 int main(int argc, char* argv[])
 {
-	// choose whether to solve solve statistical equilibrium equations (with RT_point_iterations class) or integrate kinetic equations for level populations over time (with RT_time_Newt or RT_time class)
+	// choose whether to solve statistical equilibrium equations (with RT_point_iterations class) or integrate kinetic equations for level populations over time (with RT_time_Newt or RT_time class)
 	typedef typename std::conditional<TIME_INTEGRATION_OF_KINETIC_EQUATIONS, RT_time_Newt, RT_point_iterations>::type RTclass;
 	RTclass *LRT = nullptr;
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 			fin.close();
 
 			LRT = new RTclass();
-		} else {							// read model parameters console input
+		} else {							// read model parameters from console input
 			initialize_modelPhysPars(cin);	// read physical conditions from console input
 			LRT = new RTclass(cin);
 		}
