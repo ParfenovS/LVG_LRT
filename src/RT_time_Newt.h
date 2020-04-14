@@ -239,7 +239,7 @@ public:
 						double temp_var = oldpops_time[i][0];
 						binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 					}
-					mol->levels[i].pop += dpop_dt[i] * h;
+					if (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations) mol->levels[i].pop += dpop_dt[i] * h;
 				}
 				rn = h / h_old;
 				BDF_coeffs[0] = (1+2*rn)/(1+rn); BDF_coeffs[1] = -(1+rn); BDF_coeffs[2] = rn*rn/(1+rn);
