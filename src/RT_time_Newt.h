@@ -1,33 +1,9 @@
 #pragma once
-#include "RT.h"
+#include "RT_time_base.h"
 
-class RT_time_Newt : public RT		// integrates kinetic equations for level populations over time; the non-linear system of equations at each time step is solved with Newton method
+class RT_time_Newt : public RT_time_base		// integrates kinetic equations for level populations over time; the non-linear system of equations at each time step is solved with Newton method
 {
 private:
-
-	void write_rad_trans_data_into_binary_file(beta_LVG & LVG_beta, double time, ofstream & binTbrfile, ofstream & binTexfile, ofstream & bintaufile) {
-		binTbrfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
-		binTexfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
-		bintaufile.write(reinterpret_cast<const char*>(&time), sizeof(double));
-		prepare_results_for_output(LVG_beta);
-		double temp_var = 0.0;
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			temp_var = mol->rad_trans[i].Tbr;
-			binTbrfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
-			temp_var = mol->rad_trans[i].Tex;
-			binTexfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
-			temp_var = mol->rad_trans[i].tau;
-			bintaufile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
-		}
-	}
-
-	void clear_mem_close_files(double A[], double pop[], double Jac[], double dpop_dt[], vector <vector <double> > & oldpops_Ng, vector <vector <double> > & oldpops_time, ofstream & binpopfile, ofstream & binTbrfile, ofstream & binTexfile, ofstream & bintaufile) {
-		delete[] A; delete[] pop; delete[] Jac; delete[] dpop_dt;
-		oldpops_Ng.clear(); oldpops_time.clear();
-		if (cerr_output_iter_progress) {
-			binpopfile.close(); binTbrfile.close(); binTexfile.close(); bintaufile.close();
-		}
-	}
 
 	double populate_matrix_vector(double A[], double B[], double Jac[], beta_LVG & LVG_beta, const vector <vector <double> > & oldpops, const double BDF_coeffs[], const double & h, double dpop_dt[])	// fill the matrix A and vector B from the non-linear system of equations A*X=B which is obtained at each step of integration over time and Jacobian used to solve the system; compute vector of derivatives of populations over time and its norm
 	{
@@ -87,11 +63,21 @@ private:
 		return sqrt(norm);
 	}
 
+	void update_external_emission(const double & time)
+	{
+		// set the external emission mean intensity, optical depth, absorption and emission coefficients
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			mol->rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mol->rad_trans[i].nu, time); //external emission from dust, cosmic microwave background or file
+			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu, time); //absorption coefficient of the dust inside the maser region
+		}
+	}
+
 public:
 	
 	int radiative_transfer() override		// main function which should be called to perform radiative transfer calculations
 	{
 		const size_t nlevs = mol->levels.size();
+		double time = 0.0;
 
 		// prepare to output the dependence of level populations on time into the binary file
 		ofstream binpopfile, binTbrfile, binTexfile, bintaufile;
@@ -109,11 +95,9 @@ public:
 
 		// set the external emission mean intensity, optical depth, absorption and emission coefficients
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			mol->rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mol->rad_trans[i].nu); //external emission from dust, cosmic microwave background or file
 			mol->rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mol->rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
 			mol->rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mol->rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
 			mol->rad_trans[i].kabs_dust = mol->rad_trans[i].taud_in * (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT) / modelPhysPars::NdV; //absorption coefficient of the dust inside the maser region
-			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu); //absorption coefficient of the dust inside the maser region
 			// mol->rad_trans[i].JExtHII will be zero if external emission will be taken from file
 		}
 		
@@ -125,7 +109,6 @@ public:
 		
 		vector <vector <double> > oldpops_Ng;		// stores populations used for Ng acceleration
 		vector <vector <double> > oldpops_time;
-		double time = 0.0;
 		if (cerr_output_iter_progress) binpopfile.write(reinterpret_cast<const char*>(&time), sizeof(double));
 		for (size_t i = 0; i < nlevs; i++) {
 			oldpops_Ng.push_back(vector <double>());
@@ -166,6 +149,7 @@ public:
 			double pop_norm = 1.e-30;
 			size_t solveStatEqSuccess = 0;
 			double MaxRPopDiff_at_prev_iter = 0.0;
+			update_external_emission(time + h);
 			do {							// solve non-linear system of equations at a given time step with Newton method
 				F_norm = populate_matrix_vector(A, pop, Jac, LVG_beta, oldpops_time, BDF_coeffs, h, dpop_dt);
 				solveStatEqSuccess = solve_eq_sys(A, pop);	// solve linear system of equations with LU decomposition, solution is stored in pop
@@ -240,18 +224,16 @@ public:
 		clear_mem_close_files(A, pop, Jac, dpop_dt, oldpops_Ng, oldpops_time, binpopfile, binTbrfile, binTexfile, bintaufile);
 
 		if (ntimesteps == maxNumberOfIterations) cerr << "#warning: maximum number of time steps has been exceeded " << "n= " << F_norm << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
-
-		prepare_results_for_output(LVG_beta);
 		
 		return 0;
 	}
 
-	RT_time_Newt() noexcept : RT()
+	RT_time_Newt() noexcept : RT_time_base()
 	{}
 
-	RT_time_Newt(istream & cin) : RT(cin)
+	RT_time_Newt(istream & cin) : RT_time_base(cin)
 	{}
 
-	RT_time_Newt(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth) : RT(initialSolutionSource, MAX_POPS_EPS, maxNumberOfIterations, beamH, lineWidth)
+	RT_time_Newt(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth) : RT_time_base(initialSolutionSource, MAX_POPS_EPS, maxNumberOfIterations, beamH, lineWidth)
 	{}
 };
