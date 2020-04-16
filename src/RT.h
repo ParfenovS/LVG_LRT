@@ -313,24 +313,6 @@ protected:
 		}
 	}
 
-	void prepare_results_for_output(beta_LVG & LVG_beta)
-	{
-		// preparing quantities for output
-		double dummy_S = 0.0;
-		double dummy_beta = 0.0;
-		double dummy_betaS = 0.0;
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			compute_tau(i); 		// computing final optical depths that can be used for output
-			compute_J_S_beta(i, LVG_beta, dummy_S, dummy_beta, dummy_betaS); 	// computing final mean intensities that can be used for output
-			compute_Tex(i); 		// computing excitation temperature that can be used for output
-			compute_brightness_temperature(i); 	// computing brightness temperature and intensity of the emission
-		}
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			// the output optical depth is an optical depth along the line of sight, thus one need to take into account beaming
-			mol->rad_trans[i].tau *= beamH;
-		}
-	}
-
 	bool update_check_pops(const double pop[], size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm, const double & underRelaxFac)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
