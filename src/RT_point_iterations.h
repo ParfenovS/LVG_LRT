@@ -5,7 +5,24 @@ class RT_point_iterations : public RT		// solves statistical equilibrium equatio
 {
 private:
 	
-    void populate_matrix_vector(double A[], double B[], beta_LVG & LVG_beta)	// fill the matrix A and vector B from the statistical equilibrium equations system A*X=B
+	double get_condition_number(double A0[])
+	{
+		const size_t & n = mol->levels.size();
+		double *s = new double[n];
+		double *e = new double[n];
+		double *work = new double[n];
+		double *A = new double[n*n];
+		std::memcpy(A, A0, n*n*sizeof(double));
+		dsvdc ( A, n, n, s, e, work);
+		double cond_number = s[0] / s[n-1];
+		delete[] s;
+		delete[] e;
+		delete[] work;
+		delete[] A;
+		return cond_number;
+	}
+	
+	void populate_matrix_vector(double A[], double B[], beta_LVG & LVG_beta)	// fill the matrix A and vector B from the statistical equilibrium equations system A*X=B
 	{
 		const size_t & n = mol->levels.size();
 		
