@@ -1,11 +1,12 @@
 #pragma once
 #include "RT.h"
+#include <cstring>
 
 class RT_point_iterations : public RT		// solves statistical equilibrium equations for level populations using fixed point iterations
 {
 private:
 	
-	double get_condition_number(double A0[])
+    double get_condition_number(double A0[])
 	{
 		const size_t & n = mol->levels.size();
 		double *s = new double[n];
@@ -21,7 +22,7 @@ private:
 		delete[] A;
 		return cond_number;
 	}
-	
+
 	void populate_matrix_vector(double A[], double B[], beta_LVG & LVG_beta)	// fill the matrix A and vector B from the statistical equilibrium equations system A*X=B
 	{
 		const size_t & n = mol->levels.size();
@@ -59,6 +60,24 @@ private:
 			B[i] = 0.0;
 		}
 		B[0] = this->partition_function_ratio; // the sum of populations should be = 1 or = partition functions ratio
+	}
+
+	void prepare_results_for_output(beta_LVG & LVG_beta)
+	{
+		// preparing quantities for output
+		double dummy_S = 0.0;
+		double dummy_beta = 0.0;
+		double dummy_betaS = 0.0;
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			compute_tau(i); 		// computing final optical depths that can be used for output
+			compute_J_S_beta(i, LVG_beta, dummy_S, dummy_beta, dummy_betaS); 	// computing final mean intensities that can be used for output
+			compute_Tex(i); 		// computing excitation temperature that can be used for output
+			compute_brightness_temperature(i); 	// computing brightness temperature and intensity of the emission
+		}
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			// the output optical depth is an optical depth along the line of sight, thus one need to take into account beaming
+			mol->rad_trans[i].tau *= beamH;
+		}
 	}
 
 public:
