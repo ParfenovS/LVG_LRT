@@ -3,7 +3,7 @@
 #include "physconsts.h"
 #include <fstream>
 
-class RT_time_base : public RT		// integrates kinetic equations for level populations over time; the non-linear system of equations at each time step is solved with fixed point iterations
+class RT_time_base : public RT		// base class for integration of kinetic equations for level populations over time;
 {
 protected:
 
