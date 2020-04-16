@@ -98,6 +98,7 @@ public:
         unsigned int iter = 0;
         do {
 			populate_matrix_vector(A, pop, LVG_beta);
+			//double cond_number = get_condition_number(A);
 			size_t solveStatEqSuccess = solve_eq_sys(A, pop);	// solve statistical equilibrium equation with LU decomposition, solution is stored in mol->levels[i].pop
 			if (solveStatEqSuccess != 0) {						// the solution can't be found
 				delete[] A; delete[] pop;
