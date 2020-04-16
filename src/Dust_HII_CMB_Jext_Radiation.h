@@ -107,6 +107,11 @@ private:
 		return ( HII_turn_freq / freq) * ( HII_turn_freq / freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
 	}
 
+	double var_Td(const double & time) // dependence of dust temperature on time
+	{
+		return Td;
+	}
+
 public:
 
 	unsigned short HII_region_at_LOS;	// = 0 - HII region is not on the line of sight; = 1 - HII region is on the line of sight
@@ -132,15 +137,40 @@ public:
 		return planck_function(Td, freq);
 	}
 
+	double outer_dust_source_function(const double & freq, const double & time) 	// source function for the external dust emission
+	{
+		return planck_function(var_Td(time), freq);
+	}
+
 	double inner_dust_source_function(const double & freq) 	// source function for the dust emission inside the maser region
 	{
 		return inner_dust_included * planck_function(Td, freq);
+	}
+
+	double inner_dust_source_function(const double & freq, const double & time) 	// source function for the dust emission inside the maser region
+	{
+		return inner_dust_included * planck_function(var_Td(time), freq);
 	}
 	
 	double compute_Jext_dust_CMB_file(const double & freq)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
 	{
 		if (read_Jext_from_file == 0) {
 			const double J_dust = Wd * ( 1. - exp(-tau_dust(freq)) ) * outer_dust_source_function(freq); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
+
+			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1. - Wd) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
+
+			return J_dust + J_CMB;
+		} else {
+			// !!!!!! NOTE !!!!!! that this code has been used for calculations with the mean intensity provided by CLOUDY code;
+			// CLOUDY outputs photon occupation number which is converted into the mean intensity below
+			return interpolate_Jext_from_file(freq) * 2.*PLANK_CONSTANT*pow(freq/SPEED_OF_LIGHT,2.)*freq; // photon occupation number into mean intensity;
+		}
+	}
+
+	double compute_Jext_dust_CMB_file(const double & freq, const double & time)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
+	{
+		if (read_Jext_from_file == 0) {
+			const double J_dust = Wd * ( 1. - exp(-tau_dust(freq)) ) * outer_dust_source_function(freq, time); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
 			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1. - Wd) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
 
@@ -163,6 +193,12 @@ public:
 	double continuum(const double & freq) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
 	{
 		return outer_dust_source_function(freq) * (1. - exp(-tau_dust_LOS(freq))) + 
+			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included*( 1. - exp(-tau_HII(freq)) ) * planck_function(Te,freq);
+	}
+
+	double continuum(const double & freq, const double & time) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
+	{
+		return outer_dust_source_function(freq, time) * (1. - exp(-tau_dust_LOS(freq))) + 
 			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included*( 1. - exp(-tau_HII(freq)) ) * planck_function(Te,freq);
 	}
 
