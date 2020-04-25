@@ -8,6 +8,11 @@ private:
 	vector<double> nu_from_file; // array of frequencies from the file with external radiation
 	vector<double> J_from_file; // array of occupation numbers from the file with external radiation
 
+	vector<double> time_from_file_small; // array of time points from file with dependence of dust temperature on time
+	vector<double> Td_from_file_small; // array of dust temperatures from file with dependence of dust temperature on time
+	vector<double> time_from_file_large; // array of time points from file with dependence of dust temperature on time
+	vector<double> Td_from_file_large; // array of dust temperatures from file with dependence of dust temperature on time
+
 	// Dust emission is given by modified black body emission multiplied by Wd; the mean intensity J = Wd * tau0 * (nu/nu0)^p * planck_function(Td,nu) (see e.g. Sobolev et al. 1997, van der Walt 2014)
 	double tau_nu0;				// optical depth at frequency=nu0 from the modified black body function
 	double nu0;					// [Hz], nu0 from the modified black body function
@@ -67,6 +72,43 @@ private:
 		}
 		return 0.0;
 	}
+
+	void read_Td_from_file(const string & filename) 	//read mean intensity of external emission from a file
+	{
+		ifstream fin;
+		istringstream sfin;
+		string str;
+		double input_time, input_Td;
+
+		fin.open(filename.c_str(), ios::in);
+		if ( !fin.good() ) { 	// check if we found the file
+			fin.close();
+			throw runtime_error("can't find input file with dependence of dust temperature on time");
+		}
+
+		while (getline(fin,str)) {
+			str = trim(str); 	// trim is taken from auxiliary.h
+			if (str.size() != 0) {
+				sfin.str(str);
+				sfin >> input_time >> input_Td;
+				sfin.clear();
+				time_from_file_small.push_back( input_time );
+				Td_from_file_small.push_back( input_Td ); 
+			}
+			else break;
+		}
+		fin.close();
+	}
+
+	double interpolate_Td_from_file(const double & time, const vector <double> & time_from_file, const vector <double> & Td_from_file) 	// interpolate dust temperature that has been read from file for a time
+	{
+		if (time < time_from_file[0] || time > time_from_file[time_from_file.size()-1]) return 0.0;
+		for (size_t i = 0; i < time_from_file.size()-1; i++ ) {
+			if (time_from_file[i] <= time && time <= time_from_file[i+1])
+				return Td_from_file[i] + (Td_from_file[i+1] - Td_from_file[i]) / (time_from_file[i+1] - time_from_file[i]) * (time - time_from_file[i]);  
+		}
+		return 0.0;
+	}
 	
 	template <typename T>
 	void read_parameters(T & fin)
@@ -109,7 +151,37 @@ private:
 
 	double var_Td(const double & time) // dependence of dust temperature on time
 	{
-		return Td;
+		//double curTd = 150;
+		//if (time > 3600) curTd = 120;
+		//
+		double curTd = Td;
+		double maxTd = 170.;
+		if ( time <= 600 ) curTd = curTd + (maxTd - curTd) / 600. * time;
+		else curTd = curTd + (maxTd - curTd) * exp( - 0.5*pow((time - 600)/18000., 2.0) );
+		return curTd;
+	}
+
+	double var_Td(const double & time, const vector <double> & time_from_file, const vector <double> & Td_from_file) // dependence of dust temperature on time
+	{
+		return Td + interpolate_Td_from_file(time, time_from_file, Td_from_file);	
+	}
+
+	double var_Td_small(const double & time) // dependence of dust temperature on time
+	{
+		double curTd = Td;
+		double maxTd = 170.;
+		if ( time <= 600 ) curTd = curTd + (maxTd - curTd) / 600. * time;
+		else curTd = curTd + (maxTd - curTd) * exp( - 0.5*pow((time - 600)/18000., 2.0) );
+		return curTd;
+	}
+
+	double var_Td_large(const double & time) // dependence of dust temperature on time
+	{
+		double curTd = Td;
+		double maxTd = 130.;
+		if ( time <= 600 ) curTd = curTd + (maxTd - curTd) / 600. * time;
+		else curTd = curTd + (maxTd - curTd) * exp( - 0.5*pow((time - 600)/18000., 2.0) );
+		return curTd;
 	}
 
 public:
@@ -119,6 +191,9 @@ public:
 	double tau_dust(const double & freq) 	// optical depth of external dust at a given frequency
 	{
 		return tau_nu0 * pow( freq / nu0, p); // see e.g. Sobolev et al. 1997
+		////const double norm = 1 + pow( (4*nu0) / (nu0*0.25), 1.5);
+		//const double norm = pow( nu0 / (4*nu0), 2.0) + pow( nu0 / (nu0*0.25), 1.5);
+		//return tau_nu0 * ( pow( freq / (4*nu0), 2.0) + pow( freq / (nu0*0.25), 1.5) ) / norm;
 	}
 
 	double tau_dust_LOS(const double & freq) 	// optical depth of external dust at a given frequency on the line of sight
@@ -135,11 +210,20 @@ public:
 	double outer_dust_source_function(const double & freq) 	// source function for the external dust emission
 	{
 		return planck_function(Td, freq);
+		/*double time = 0;
+		double k_ratio = pow( freq / (nu0*0.25), 1.5) / pow( freq / (4*nu0), 2.0);
+		double j = planck_function(var_Td_small(time), freq) + planck_function(var_Td_large(time), freq) * k_ratio;
+		double k = 1. + k_ratio;
+		return j / k;*/
 	}
 
 	double outer_dust_source_function(const double & freq, const double & time) 	// source function for the external dust emission
 	{
 		return planck_function(var_Td(time), freq);
+		/*double k_ratio = pow( freq / (nu0*0.25), 1.5) / pow( freq / (4*nu0), 2.0);
+		double j = planck_function(var_Td_small(time), freq) + planck_function(var_Td_large(time), freq) * k_ratio;
+		double k = 1. + k_ratio;
+		return j / k;*/
 	}
 
 	double inner_dust_source_function(const double & freq) 	// source function for the dust emission inside the maser region
@@ -222,12 +306,16 @@ public:
 		read_parameters(fin);
 		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
 		if (WHii <= 100. * DBL_EPSILON || HII_region_at_LOS == 0) HII_region_included = 0;
+		//read_Td_from_file("Td.txt");
 	}
 
 	~dust_HII_CMB_Jext_radiation()
 	{
 		nu_from_file.clear();
 		J_from_file.clear();
+		time_from_file_small.clear();
+		Td_from_file_small.clear();
+		time_from_file_large.clear();
+		Td_from_file_large.clear();
 	}
 };
-
