@@ -59,26 +59,20 @@ inline void daxpy ( const size_t & n, real_type da, real_type dx[], real_type dy
 //
 {
   size_t i;
-  size_t m;
 
   if ( da == 0.0 )
   {
     return;
   }
 
-  m = n % 4;
-
-  for ( i = 0; i < m; i++ )
+  #if defined(__INTEL_COMPILER)
+  #pragma ivdep
+  #else 
+  #pragma GCC ivdep
+  #endif
+  for ( i = 0; i < n; i++ )
   {
     dy[i] = dy[i] + da * dx[i];
-  }
-
-  for ( i = m; i < n; i = i + 4 )
-  {
-    dy[i  ] = dy[i  ] + da * dx[i  ];
-    dy[i+1] = dy[i+1] + da * dx[i+1];
-    dy[i+2] = dy[i+2] + da * dx[i+2];
-    dy[i+3] = dy[i+3] + da * dx[i+3];
   }
 
   return;
@@ -133,20 +127,15 @@ inline void dscal ( const size_t & n, real_type sa, real_type x[] )
 //
 {
   size_t i;
-  const size_t m = n % 5;
 
-  for ( i = 0; i < m; i++ )
+  #if defined(__GNUC__ )
+  #pragma GCC ivdep
+  #else 
+  #pragma ivdep
+  #endif
+  for ( i = 0; i < n; i++ )
   {
     x[i] = sa * x[i];
-  }
-
-  for ( i = m; i < n; i = i + 5 )
-  {
-    x[i]   = sa * x[i];
-    x[i+1] = sa * x[i+1];
-    x[i+2] = sa * x[i+2];
-    x[i+3] = sa * x[i+3];
-    x[i+4] = sa * x[i+4];
   }
 
   return;
