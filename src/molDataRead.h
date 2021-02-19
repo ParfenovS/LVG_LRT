@@ -1,6 +1,7 @@
 #pragma once
 #include "molModel.h"
 #include "auxiliary.h"
+#include "hiddenParameters.h"
 
 class molDataRead			// reads and sets spectroscopic data
 {
@@ -12,8 +13,13 @@ private:
 	double interp_C(double *T, double *C, const size_t & num_of_coll_temps) 	//collisional coefficient interpolation on temperature Temp
 	{
 		const double & Tk = modelPhysPars::Tks;
-		if (Tk <= T[0]) return C[0];
-		if (Tk >= T[num_of_coll_temps-1]) return C[num_of_coll_temps-1];
+		if (EXTRAPOLATE_COLL_RATES_AS_SQRT_OF_TK) {
+			if (Tk <= T[0]) return C[0] * sqrt(Tk / T[0]);
+			if (Tk >= T[num_of_coll_temps-1]) return C[num_of_coll_temps-1] * sqrt(Tk / T[num_of_coll_temps-1]);
+		} else {
+			if (Tk <= T[0]) return C[0];
+			if (Tk >= T[num_of_coll_temps-1]) return C[num_of_coll_temps-1];
+		}
 		for (size_t i = 1; i < num_of_coll_temps; i++) {
 			if (T[i-1] <= Tk && Tk <= T[i]) return C[i-1] + (Tk - T[i-1]) * (C[i] - C[i-1]) / (T[i] - T[i-1]);  
 		}
