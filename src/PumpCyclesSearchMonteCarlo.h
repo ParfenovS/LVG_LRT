@@ -166,7 +166,7 @@ private:
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
 				if (cycles[c].CollDom[m] == 1) cout << "*";
-				cout << cycles[c].lms[m] << "\t";
+				cout << cycles[c].lms[m] + 1 << "\t";
 			}
 			cout << "\n";
 		}
