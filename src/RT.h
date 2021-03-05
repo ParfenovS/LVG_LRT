@@ -93,21 +93,35 @@ protected:
 		}
 
 		double z = 0.0; 	// partition function calculated for a given set of levels (the full, actual partition function should include all levels)
-		for (size_t i = mol->levels.size(); i-- > 0; ) z += mol->levels[i].g * exp( -SPEED_OF_LIGHT*PLANK_CONSTANT*mol->levels[i].E / (BOLTZMANN_CONSTANT*temperature) );
+		for (size_t i = mol->levels.size(); i-- > 0; ) z += mol->levels[i].g * exp( -(SPEED_OF_LIGHT*PLANK_CONSTANT/BOLTZMANN_CONSTANT) * mol->levels[i].E / temperature );
 		z = partition_function_ratio / z;
 
 		for (size_t i = 0; i < mol->levels.size(); i++) {
-			mol->levels[i].pop = max(MIN_POP, mol->levels[i].g * exp( -SPEED_OF_LIGHT*PLANK_CONSTANT*mol->levels[i].E / (BOLTZMANN_CONSTANT*temperature) ) * z);
+			mol->levels[i].pop = max(MIN_POP, mol->levels[i].g * exp( -(SPEED_OF_LIGHT*PLANK_CONSTANT/BOLTZMANN_CONSTANT) * mol->levels[i].E / temperature ) * z);
 		}
+	}
+
+	double kabsf(const size_t & i)	// absorption coefficient for i-th transition without taking into account line overlapping
+	{
+		const size_t & up = mol->rad_trans[i].up_level;
+		const size_t & low = mol->rad_trans[i].low_level;
+		//return mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul;
+		const __float128 a = (__float128)(mol->levels[low].pop * mol->rad_trans[i].Blu);
+		const __float128 b = (__float128)(mol->levels[up].pop * mol->rad_trans[i].Bul);
+		const __float128 c = a - b;
+		return (double)c;
+	}
+
+	double emissf(const size_t & i) // emission coefficient for i-th transition without taking into account line overlapping
+	{
+		return mol->rad_trans[i].A * mol->levels[mol->rad_trans[i].up_level].pop;
 	}
 
 	void compute_tau(const size_t & i)		// optical depth of the maser region for radiative transition i
 	{ // see e.g. Appendix A in Sobolev et al. 1997
 
 		auto tauf = [&](const size_t & i) { 	// this lambda function returns optical depth for i-th transition without taking into account line overlapping
-			const size_t & up = mol->rad_trans[i].up_level;
-			const size_t & low = mol->rad_trans[i].low_level;
-			return (PLANK_CONSTANT * SPEED_OF_LIGHT / 4. / PI) * (mol->levels[low].pop*mol->rad_trans[i].Blu - mol->levels[up].pop*mol->rad_trans[i].Bul) * modelPhysPars::NdV;
+			return (PLANK_CONSTANT * SPEED_OF_LIGHT / 4. / PI) * modelPhysPars::NdV * kabsf(i);
 		};
 
 		mol->rad_trans[i].tau = tauf(i); 	// compute tau for i-th transition
@@ -118,15 +132,6 @@ protected:
 	
 	void compute_J_S_beta(const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S)		//computes mean intensity, source function, escape probability, and their product for radiative transition i
 	{ // see also equation for Jav in Appendix A of Sobolev et al. 1997
-		auto kabsf = [&](const size_t & i) { 	// this lambda function returns absorption coefficient for i-th transition without taking into account line overlapping
-			const size_t & up = mol->rad_trans[i].up_level;
-			const size_t & low = mol->rad_trans[i].low_level;
-			return mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul;
-		};
-		auto emissf = [&](const size_t & i) { 	// this lambda function returns emission coefficient for i-th transition without taking into account line overlapping
-			return mol->rad_trans[i].A * mol->levels[mol->rad_trans[i].up_level].pop;
-		};
-
 		double kabs = kabsf(i); 		// part of the line absorption coefficient 
 		double emiss = emissf(i); 		// part of the line emission coefficient
 		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
@@ -136,12 +141,12 @@ protected:
 		emiss += mol->rad_trans[i].emiss_dust;
 		kabs += mol->rad_trans[i].kabs_dust;
 
-		beta = 1.0; 		// escape probability = beta(tau) -> 1 for tau -> 0.0
-		beta_S = 0.0; 		// (1 - beta) * source function;
+		beta = 1.0e00; 		// escape probability = beta(tau) -> 1 for tau -> 0.0
+		beta_S = 0.0e00; 		// (1 - beta) * source function;
 		if (fabs(kabs) > 0.0) {
 			beta = LVG_beta.beta(mol->rad_trans[i].tau);
 			S = emiss / kabs;
-			beta_S = S * (1. - beta);
+			beta_S = S * (1.0e00 - beta);
 		} else {
 			S = 0.0;
 			beta_S = 0.5 * emiss * modelPhysPars::NdV / (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
@@ -163,15 +168,6 @@ protected:
 
 	double compute_source_function(const size_t & i)		// computes source function
 	{
-		auto kabsf = [&](const size_t & i) { 	// this lambda function returns absorption coefficient for i-th transition without taking into account line overlapping
-			const size_t & up = mol->rad_trans[i].up_level;
-			const size_t & low = mol->rad_trans[i].low_level;
-			return mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul;
-		};
-		auto emissf = [&](const size_t & i) { 	// this lambda function returns emission coefficient for i-th transition without taking into account line overlapping
-			return mol->rad_trans[i].A * mol->levels[mol->rad_trans[i].up_level].pop;
-		};
-
 		double kabs = kabsf(i); 	// part of the line absorption coefficient 
 		double emiss = emissf(i); 	// part of the line emission coefficient
 		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
@@ -207,9 +203,9 @@ protected:
 	{ 	// it is similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
 		const double & nu = mol->rad_trans[i].nu;
 		mol->rad_trans[i].Tbr = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * (
-			(1. - exp(-mol->rad_trans[i].tau*beamH)) * compute_source_function(i) +
+			oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i) +
 			(exp(-mol->rad_trans[i].tau*beamH) - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->continuum(nu) -
-			(1. - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu)
+			oneMinusExp(mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu)
 		) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
@@ -243,7 +239,7 @@ protected:
 	{
 		constexpr const size_t m = Ng_order + 1;
 
-		double dnm, dnmj, dnmk; 	// population differences between different iterations
+		//double dnm, dnmj, dnmk; 	// population differences between different iterations
 		double err_c = 0.0;
 
 		double Cjk[Ng_order * Ng_order]; // the matrix of coefficients that will be used for Ng acceleration
@@ -255,10 +251,17 @@ protected:
 				Cjk[j + Ng_order*k] = 0.0;
 				err_c = 0.0;
 				for (size_t i = mol->levels.size(); i-- > 0; ) {
-					dnm = pop[i] - oldpops[i][m];
-					dnmj = oldpops[i][m-j-1] - oldpops[i][m-j-2];
-					dnmk = oldpops[i][m-k-1] - oldpops[i][m-k-2];
-					cascade_summation(err_c, Cjk[j + Ng_order*k], (dnm - dnmj) * (dnm - dnmk)); 	// equation 8.113 from Gray's maser book
+					//dnm = pop[i] - oldpops[i][m];
+					//dnmj = oldpops[i][m-j-1] - oldpops[i][m-j-2];
+					//dnmk = oldpops[i][m-k-1] - oldpops[i][m-k-2];
+					//cascade_summation(err_c, Cjk[j + Ng_order*k], (dnm - dnmj) * (dnm - dnmk)); 	// equation 8.113 from Gray's maser book
+					const __float128 a1 = pop[i] + oldpops[i][m-j-2];
+					const __float128 b1 = oldpops[i][m] + oldpops[i][m-j-1];
+					const __float128 a2 = pop[i] + oldpops[i][m-k-2];
+					const __float128 b2 = oldpops[i][m] + oldpops[i][m-k-1];
+					cascade_summation(err_c, Cjk[j + Ng_order*k],
+						(double)( (a1 - b1) * (a2 - b2) )
+					); 	// equation 8.113 from Gray's maser book
 				}
 				Cjk[j + Ng_order*k] += err_c;
 				Cjk[k + Ng_order*j] = Cjk[j + Ng_order*k]; 	// matrix Cjk is symmetric
@@ -266,9 +269,16 @@ protected:
 			bk[j] = 0.0;
 			err_c = 0.0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				dnm = pop[i] - oldpops[i][m];
-				dnmj = oldpops[i][m-j-1] - oldpops[i][m-j-2];
-				cascade_summation(err_c, bk[j], dnm * (dnm - dnmj)); 	// equation 8.114 from Gray's maser book
+				//dnm = pop[i] - oldpops[i][m];
+				//dnmj = oldpops[i][m-j-1] - oldpops[i][m-j-2];
+				//cascade_summation(err_c, bk[j], dnm * (dnm - dnmj)); 	// equation 8.114 from Gray's maser book
+				const __float128 a1 = pop[i] + oldpops[i][m-j-2];
+				const __float128 b1 = oldpops[i][m] + oldpops[i][m-j-1];
+				const __float128 a2 = pop[i];
+				const __float128 b2 = oldpops[i][m];
+				cascade_summation(err_c, bk[j],
+					(double)( (a2 - b2) * (a1 - b1) )
+				); 	// equation 8.114 from Gray's maser book
 			}
 			bk[j] += err_c;
 		}
