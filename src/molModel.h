@@ -15,12 +15,13 @@ private:
 	{
 	    if (C_counter[id_up][id_low] == modelPhysPars::fraction_H2.size()) {	// check if one already assigned Cji coef. and if one took into account all collisional agents;
 			if (levels[id_low].g != 0.0 && modelPhysPars::Tks != 0.0) {			// check if one have all quantities to compute Cji;
-				coll_trans[id_low][id_up] = (levels[id_up].g / levels[id_low].g) * coll_trans[id_up][id_low] * exp((levels[id_low].E - levels[id_up].E)*(SPEED_OF_LIGHT*PLANK_CONSTANT) / (BOLTZMANN_CONSTANT * modelPhysPars::Tks));
+				const double dE = levels[id_low].E - levels[id_up].E;
+				coll_trans[id_low][id_up] = (levels[id_up].g / (double)levels[id_low].g) * coll_trans[id_up][id_low] * exp(dE / modelPhysPars::Tks * (SPEED_OF_LIGHT*PLANK_CONSTANT/BOLTZMANN_CONSTANT));
 			} else coll_trans[id_low][id_up] = 0.0;
 			// computing collisional part of diagonal elements of matrix A from the statistical equilibrium equation A*X=B
-			// Cii = - sum{k=1,Nlevel}(Cik)
-			coll_trans[id_up][id_up] 	-= coll_trans[id_up][id_low];
-			coll_trans[id_low][id_low]  -= coll_trans[id_low][id_up];
+			// Cii = sum{k=1,Nlevel}(Cik)
+			coll_trans[id_up][id_up] 	+= coll_trans[id_up][id_low];
+			coll_trans[id_low][id_low]  += coll_trans[id_low][id_up];
 		}
 	}
 
@@ -90,7 +91,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 
 		if      (par_name == "id")  levels[i].id	 = get<size_t>(par_value);
 		else if (par_name == "E")   levels[i].E		 = get<double>(par_value);
-		else if (par_name == "g")   levels[i].g		 = get<double>(par_value);
+		else if (par_name == "g")   levels[i].g		 = static_cast<int>(round(get<double>(par_value)));
 		else if (par_name == "pop") levels[i].pop	 = get<double>(par_value);
 		else if (par_name == "Q")   levels[i].Q_num	 = get<string>(par_value);
 		else throw runtime_error("There is no such a field in the level class");
@@ -113,8 +114,8 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 		// check Einstein B coeffs.
 		if (fabs(rad_trans[0].Bul) == 0.0 && fabs(rad_trans[rad_trans.size()-1].Bul) == 0.0) {
 			for (size_t i = 0; i < rad_trans.size(); i++) {
-				rad_trans[i].Bul = rad_trans[i].A / (2.* PLANK_CONSTANT) * pow(SPEED_OF_LIGHT/rad_trans[i].nu, 2.) / rad_trans[i].nu;
-				rad_trans[i].Blu = levels[rad_trans[i].up_level].g * rad_trans[i].Bul / levels[rad_trans[i].low_level].g;
+				rad_trans[i].Bul = rad_trans[i].A * (SPEED_OF_LIGHT / rad_trans[i].nu) * (SPEED_OF_LIGHT / rad_trans[i].nu) / (PLANK_CONSTANT * rad_trans[i].nu) * 0.5;
+				rad_trans[i].Blu = levels[rad_trans[i].up_level].g * rad_trans[i].Bul / (double)levels[rad_trans[i].low_level].g;
 			}
 		}
 
