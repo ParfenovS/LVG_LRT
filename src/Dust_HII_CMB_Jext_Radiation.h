@@ -18,6 +18,7 @@ private:
 	double nu0;					// [Hz], nu0 from the modified black body function
 	double p;					// spectral index
 	double Wd;					// dillution factor for the dust emission
+	double oneMinusWd;			// = 1 - Wd
 	double Td;					// [K], dust temperature
 	unsigned short inner_dust_included;	// = 0 - there will be no dust inside the maser region; = 1 - there will be dust inside the maser region
 	unsigned short outer_dust_at_LOS;	// = 0 - the dust outside the maser region is not on the line of sight; = 1 - the dust outside the maser region is on the line of sight
@@ -239,51 +240,51 @@ public:
 	double compute_Jext_dust_CMB_file(const double & freq)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
 	{
 		if (read_Jext_from_file == 0) {
-			const double J_dust = Wd * ( 1. - exp(-tau_dust(freq)) ) * outer_dust_source_function(freq); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
+			const double J_dust = Wd *  oneMinusExp(tau_dust(freq))  * outer_dust_source_function(freq); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
-			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1. - Wd) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
+			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + oneMinusWd * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
 
 			return J_dust + J_CMB;
 		} else {
 			// !!!!!! NOTE !!!!!! that this code has been used for calculations with the mean intensity provided by CLOUDY code;
 			// CLOUDY outputs photon occupation number which is converted into the mean intensity below
-			return interpolate_Jext_from_file(freq) * 2.*PLANK_CONSTANT*pow(freq/SPEED_OF_LIGHT,2.)*freq; // photon occupation number into mean intensity;
+			return interpolate_Jext_from_file(freq) * (2. * PLANK_CONSTANT * freq) * (freq / SPEED_OF_LIGHT) * (freq / SPEED_OF_LIGHT); // photon occupation number into mean intensity;
 		}
 	}
 
 	double compute_Jext_dust_CMB_file(const double & freq, const double & time)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
 	{
 		if (read_Jext_from_file == 0) {
-			const double J_dust = Wd * ( 1. - exp(-tau_dust(freq)) ) * outer_dust_source_function(freq, time); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
+			const double J_dust = Wd * oneMinusExp(tau_dust(freq)) * outer_dust_source_function(freq, time); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
-			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1. - Wd) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
+			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + oneMinusWd * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
 
 			return J_dust + J_CMB;
 		} else {
 			// !!!!!! NOTE !!!!!! that this code has been used for calculations with the mean intensity provided by CLOUDY code;
 			// CLOUDY outputs photon occupation number which is converted into the mean intensity below
-			return interpolate_Jext_from_file(freq) * 2.*PLANK_CONSTANT*pow(freq/SPEED_OF_LIGHT,2.)*freq; // photon occupation number into mean intensity;
+			return interpolate_Jext_from_file(freq) * (2. * PLANK_CONSTANT * freq) * (freq / SPEED_OF_LIGHT) * (freq / SPEED_OF_LIGHT); // photon occupation number into mean intensity;
 		}
 	}
 
 	double compute_JextHII(const double & freq)		// mean intensity of the HII region emission, needs to be separated from other types of external emission because of beaming
 	{
 		if (read_Jext_from_file == 0)
-			return WHii * ( 1. - exp(-tau_HII(freq)) ) * planck_function(Te,freq);
+			return WHii * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);
 		else
 			return 0.0;
 	}
 
 	double continuum(const double & freq) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
 	{
-		return outer_dust_source_function(freq) * (1. - exp(-tau_dust_LOS(freq))) + 
-			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included*( 1. - exp(-tau_HII(freq)) ) * planck_function(Te,freq);
+		return outer_dust_source_function(freq) * oneMinusExp(tau_dust_LOS(freq)) + 
+			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);
 	}
 
 	double continuum(const double & freq, const double & time) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
 	{
-		return outer_dust_source_function(freq, time) * (1. - exp(-tau_dust_LOS(freq))) + 
-			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included*( 1. - exp(-tau_HII(freq)) ) * planck_function(Te,freq);
+		return outer_dust_source_function(freq, time) * oneMinusExp(tau_dust_LOS(freq)) + 
+			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);
 	}
 
 	template <typename T>
@@ -291,10 +292,11 @@ public:
 	{
 		T_CMB = 2.728;
 		Te = 8000.0;
-		WHii = 0.0;
+		WHii = 0;
 		HII_turn_freq = 1.e8;
 		Td = T_CMB;
-		Wd = 0.0;
+		Wd = 0;
+		oneMinusWd = 1;
 		p = 2.0;
 		nu0 = 300.e9;
 		tau_nu0 = 1.0;
@@ -304,6 +306,11 @@ public:
 		HII_region_at_LOS = 1;
 		outer_dust_at_LOS = 1;
 		read_parameters(fin);
+		oneMinusWd = 1 - Wd;
+		if (Wd > 0.99999) {
+			oneMinusWd = 0.0e00;
+			Wd = 1.0e00;
+		}
 		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
 		if (WHii <= 100. * DBL_EPSILON || HII_region_at_LOS == 0) HII_region_included = 0;
 		//read_Td_from_file("Td.txt");
