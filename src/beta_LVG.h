@@ -125,34 +125,28 @@ public:
 	double betaHII_LOS(const double & taui, const double & beamH)			// LVG escape probability for the HII region backgroung radiation in the case if the HII region is on the line of sight, see Appendix A in Sobolev et al. 1997
 	{
 		const double tau = taui * beamH;
-		if (fabs(tau) < tauCutOff) return 1. - tau * (1. - tau*(1./3.)) * 0.5; 	// Taylor expansion in case of small tau
-		return ( 1. - exp(-tau) ) / tau;
+		return beta_noBeam(tau);
 	}
 
 	double tauDbetaHIIDtau_LOS(const double & taui, const double & beamH)			// (tau *dbeta/dtau) for the HII region backgroung radiation in the case if the HII region is on the line of sight, see Appendix A in Sobolev et al. 1997
 	{
 		const double tau = taui * beamH;
-		if (fabs(tau) < tauCutOff) return (tau * (1. / 3.) - 0.5) * tau;
-		const double expTau = exp(-tau);
-		return expTau - (1. - expTau)/tau;
+		return tauDbetaDtau_noBeam(tau);
 	}
 
 	double betaHII_pump(const double & tau, const double & beamH)			// LVG escape probability for the HII region backgroung radiation in the case if the HII region is not on the line of sight; in a similar manner as in Appendix A from Sobolev et al. 1997
 	{
-		if (fabs(tau) < tauCutOff) return 1. - tau * (1. - tau*(1./3.)) * 0.5; 	// Taylor expansion in case of small tau
-		return ( 1. - exp(-tau) ) / tau;
+		return beta_noBeam(tau);
 	}
 
 	double tauDbetaHIIDtau_pump(const double & tau, const double & beamH)			// (tau *dbeta/dtau) of the LVG escape probability for the HII region backgroung radiation  in the case if the HII region is not on the line of sight; in a similar manner as in Appendix A from Sobolev et al. 1997
 	{
-		if (fabs(tau) < tauCutOff) return (tau * (1. / 3.) - 0.5) * tau;
-		const double expTau = exp(-tau);
-		return expTau - (1. - expTau)/tau;
+		return tauDbetaDtau_noBeam(tau);
 	}
 
 	beta_LVG(const double & beamH)
 	{
-		sig = 1.e0 / beamH - 1.e0;					// equation A6 from Langer & Watson 1984
+		sig = 1.0e00 / beamH - 1.0e00;					// equation A6 from Langer & Watson 1984
 		oPlusSigDiv3 = 1.e0 + sig / 3.e0;
 		tauCutOff = pow((24.*DBL_EPSILON), 0.25); 	// taken from LIME code (Brinch & Hogerheijde 2010)
 		tau_min = MIN_TAU; 							// MIN_TAU is defined in hiddenParameters.h
