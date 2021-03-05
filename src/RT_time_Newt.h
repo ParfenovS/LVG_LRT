@@ -61,9 +61,9 @@ private:
 	{ 	// it is similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
 		const double & nu = mol->rad_trans[i].nu;
 		mol->rad_trans[i].Tbr = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * (
-			(1. - exp(-mol->rad_trans[i].tau*beamH)) * compute_source_function(i) +
+			oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i) +
 			(exp(-mol->rad_trans[i].tau*beamH) - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->continuum(nu, time) -
-			(1. - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu, time)
+			oneMinusExp(-mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu, time)
 		) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
@@ -81,9 +81,9 @@ private:
 		const size_t & n = mol->levels.size();
 		
 		// Collisional transitions
-		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = - sum{k=1,Nlevel}(Cik)
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
 		for (size_t i = 0; i < n; i++) {
-			A[i + i*n] = mol->coll_trans[i][i];
+			A[i + i*n] = - mol->coll_trans[i][i];
 			Jac[i + i*n] = A[i + i*n];
 			for (size_t j = i+1; j < n; j++) {
 				A[i + j*n] = mol->coll_trans[j][i];
