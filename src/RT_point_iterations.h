@@ -28,9 +28,9 @@ private:
 		const size_t & n = mol->levels.size();
 		
 		// Collisional transitions
-		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = - sum{k=1,Nlevel}(Cik)
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
 		for (size_t i = 0; i < n; i++) {
-			A[i + i*n] = mol->coll_trans[i][i];
+			A[i + i*n] = - mol->coll_trans[i][i];
 			for (size_t j = i+1; j < n; j++) {
 				A[i + j*n] = mol->coll_trans[j][i];
 				A[j + i*n] = mol->coll_trans[i][j];
