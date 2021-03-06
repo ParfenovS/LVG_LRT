@@ -93,7 +93,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 		else if (par_name == "E")   levels[i].E		 = get<double>(par_value);
 		else if (par_name == "g")   levels[i].g		 = static_cast<int>(round(get<double>(par_value)));
 		else if (par_name == "pop") levels[i].pop	 = get<double>(par_value);
-		else if (par_name == "Q")   levels[i].Q_num	 = get<string>(par_value);
+		//else if (par_name == "Q")   levels[i].Q_num	 = get<string>(par_value);
 		else throw runtime_error("There is no such a field in the level class");
 	}
 
