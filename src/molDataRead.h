@@ -56,7 +56,7 @@ private:
 			mod->set_level(id, "id", id   );
 			mod->set_level(id, "E",  E    ); 
 			mod->set_level(id, "g",  g    ); 
-			mod->set_level(id, "Q",  Q_num);
+			//mod->set_level(id, "Q",  Q_num);
 		}
 	
 		getline(fin,str);
