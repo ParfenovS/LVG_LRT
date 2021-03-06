@@ -7,7 +7,7 @@ struct level			// stores information on a given rotational level
 	double E;
 	int g;
 	double pop;
-	std::string Q_num;
+	//std::string Q_num;
 
 	level() noexcept
 	{
@@ -15,6 +15,6 @@ struct level			// stores information on a given rotational level
 		E = -1.0;		// energy [cm-1]; can be set in molModel.h with set_level function;
 		g = -1;		// statistical weight
 		pop = -1.0;		// population [1/cm3]
-		Q_num = "";		// string with all quantum numbers for a given level
+		//Q_num = "";		// string with all quantum numbers for a given level
 	}
 };
