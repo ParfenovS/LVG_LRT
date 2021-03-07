@@ -286,7 +286,7 @@ protected:
 		// solving equation 8.116 from Gray's maser book
 		const size_t info = dgefa( Cjk, Ng_order, Ng_order, ipvt ); 	// factorization of the matrix Cjk, degfa is the LINPACK function, see linpack/linpack_d.hpp
 		if (info > 0) {
-			for (size_t i = 0; i < mol->levels.size(); i++) {
+			for (size_t i = mol->levels.size(); i-- > 0; ) {
 				for (size_t olp_i = 0; olp_i < m; olp_i++) oldpops[i][olp_i] = oldpops[i][olp_i + 1];
 				oldpops[i][m] = pop[i];
 				mol->levels[i].pop = max(pop[i], MIN_POP);
@@ -326,6 +326,7 @@ protected:
 	bool update_check_pops(const double pop[], size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm, const double & underRelaxFac)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
+		size_t levelWithMaxPop = 0;
 		bool there_were_bad_levels = false;
 		levelWithMaxRPopDiff = 0;
 		MaxRPopDiff = -1.0;
@@ -337,6 +338,7 @@ protected:
 				levelWithMaxRPopDiff = i;
 			}
 			if (pop[i] >= MAX_POP || pop[i] <= 0.0) there_were_bad_levels = true;
+			if (pop[i] > pop[levelWithMaxPop]) levelWithMaxPop = i;
 		}        
 		levelWithMaxRPopDiff += 1; // conversion from 0-based level indexing to 1-based
 		pop_norm = 1.e-30;
@@ -345,8 +347,15 @@ protected:
 			if (DoNg && iter > Ng_start && iter % Ng_step == 0) {
 				Ng_acceleration(pop, oldpops_Ng, pop_norm);
 			} else {
-				for (size_t i = 0; i < mol->levels.size(); i++) {
-					mol->levels[i].pop = max(pop[i], MIN_POP) * underRelaxFac + (1. - underRelaxFac) * mol->levels[i].pop;
+				double pops_sum = 0;
+				for (size_t i = mol->levels.size(); i-- > 0; ) {
+					if (i != levelWithMaxPop) mol->levels[i].pop = max(pop[i], MIN_POP);
+					else mol->levels[i].pop = max(pop[i], MIN_POP) * underRelaxFac + (1. - underRelaxFac) * mol->levels[i].pop;
+					pops_sum += mol->levels[i].pop;
+				}
+				pops_sum = partition_function_ratio / pops_sum;
+				for (size_t i = mol->levels.size(); i-- > 0; ) {
+					mol->levels[i].pop *= pops_sum;
 					pop_norm += mol->levels[i].pop * mol->levels[i].pop;
 					for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
 					oldpops_Ng[i][Ng_order + 1] = mol->levels[i].pop;
@@ -358,7 +367,7 @@ protected:
 
 public:
 
-	molModel *mol;				// data on molecular levels and transitions, see molModel.h
+	molModel *mol;			// data on molecular levels and transitions, see molModel.h
 	string filename_lamda; 		// name of the file with molecular spectroscopic data in LAMDA format
 	string filename_pops_in; 	// name of the file with initial level populations
 	string filename_pops_out; 	// name of the file to store final populations
