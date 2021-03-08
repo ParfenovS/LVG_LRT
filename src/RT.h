@@ -345,22 +345,24 @@ protected:
 			if (DoNg && iter > Ng_start && iter % Ng_step == 0) {
 				Ng_acceleration(pop, oldpops_Ng, pop_norm);
 			} else {
-				vector<size_t> levels_to_relax{levelWithMaxRPopDiff - 1};
+				vector<size_t> levels_to_relax;
 				for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-					if (mol->rad_trans[i].up_level == levelWithMaxRPopDiff - 1) levels_to_relax.push_back(mol->rad_trans[i].low_level);
-					if (mol->rad_trans[i].low_level == levelWithMaxRPopDiff - 1) levels_to_relax.push_back(mol->rad_trans[i].up_level);
+					if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
+						levels_to_relax.push_back(mol->rad_trans[i].up_level);
+						levels_to_relax.push_back(mol->rad_trans[i].low_level);
+					}
 				}
-				//const double rand_under_relax_fac = underRelaxFac / (double)(rand() % 10 + 1);
+				const double var_under_relax_fac = underRelaxFac / (iter % UNDER_RELAX_FAC_PERIOD + 1.);
 				double pops_sum = 0;
 				for (size_t i = mol->levels.size(); i-- > 0; ) {
 					bool lev_need_to_be_relaxed = false;
 					for (size_t j = 0; j < levels_to_relax.size(); j++) {
-						if (i == levels_to_relax[j] && pop[i] > MIN_POP_FOR_DIFF_CALC) {
+						if (i == levels_to_relax[j]) {
 							lev_need_to_be_relaxed = true;
 							break;
 						}
 					}
-					if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * underRelaxFac + (1. - underRelaxFac) * mol->levels[i].pop;
+					if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
 					else mol->levels[i].pop = max(pop[i], MIN_POP);
 					pops_sum += mol->levels[i].pop;
 				}
@@ -406,7 +408,6 @@ public:
 		fin.close();
 		this->cerr_output_iter_progress = true;
 		this->partition_function_ratio = 1.0;
-		srand(110589);
 	}
 	
 	RT(istream & cin)
@@ -421,7 +422,6 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
 		this->partition_function_ratio = 1.0;
-		srand(110589);
 	}
 
 	RT(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth)
@@ -439,7 +439,6 @@ public:
 		fin.open("Parameters/Dust_HII_CMB_Jext_Radiation.txt", ios::in);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
-		srand(110589);
 	}
 
 	virtual ~RT()
