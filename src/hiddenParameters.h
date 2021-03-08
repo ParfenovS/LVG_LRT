@@ -10,7 +10,9 @@
 #define Ng_start (2 * Ng_order)                         // the iteration number from which Ng acceleration will be switched on
 #define Ng_step (Ng_order + 1)                          // Ng accelaration will be performed each Ng_step iteration
 #define DoNg true                                       // whether to use Ng acceleration
-#define UNDER_RELAX_FACTOR 0.3                          // underrelaxation factor used while solving statistical equilibrium equations for the level with maximum population difference between iterations and for levels connected with the level by a radiative transition
+#define MAX_UNDER_RELAX_FACTOR 0.99                      // maximum of underrelaxation factor used while solving statistical equilibrium equations for the levels within the maser radiative transitions 
+#define MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX -1.0       // the underrelaxation will be for the levels within radiative transitions with tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX
+#define UNDER_RELAX_FAC_PERIOD 10                       // the underrelaxation factor varies with the iteration number, iter, as MAX_UNDER_RELAX_FACTOR / (iter % UNDER_RELAX_FAC_PERIOD + 1.);
 #define MAX_LOCAL_ACCURACY 1.e-11                       // maximum relative local error used at each step of integration over time
 #define MAX_NUM_INNER_STEPS 10000                       // maximum number of local iterations to achive LOCAL_ACCURACY
 #define INITIAL_TIME_STEP 1.e-2                         // the initial value of the time step used for integration over time, [s]
