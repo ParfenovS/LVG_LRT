@@ -326,7 +326,6 @@ protected:
 	bool update_check_pops(const double pop[], size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm, const double & underRelaxFac)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
-		size_t levelWithMaxPop = 0;
 		bool there_were_bad_levels = false;
 		levelWithMaxRPopDiff = 0;
 		MaxRPopDiff = -1.0;
@@ -338,7 +337,6 @@ protected:
 				levelWithMaxRPopDiff = i;
 			}
 			if (pop[i] >= MAX_POP || pop[i] <= 0.0) there_were_bad_levels = true;
-			if (pop[i] > pop[levelWithMaxPop]) levelWithMaxPop = i;
 		}        
 		levelWithMaxRPopDiff += 1; // conversion from 0-based level indexing to 1-based
 		pop_norm = 1.e-30;
@@ -347,12 +345,26 @@ protected:
 			if (DoNg && iter > Ng_start && iter % Ng_step == 0) {
 				Ng_acceleration(pop, oldpops_Ng, pop_norm);
 			} else {
+				vector<size_t> levels_to_relax{levelWithMaxRPopDiff - 1};
+				for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+					if (mol->rad_trans[i].up_level == levelWithMaxRPopDiff - 1) levels_to_relax.push_back(mol->rad_trans[i].low_level);
+					if (mol->rad_trans[i].low_level == levelWithMaxRPopDiff - 1) levels_to_relax.push_back(mol->rad_trans[i].up_level);
+				}
+				//const double rand_under_relax_fac = underRelaxFac / (double)(rand() % 10 + 1);
 				double pops_sum = 0;
 				for (size_t i = mol->levels.size(); i-- > 0; ) {
-					if (i != levelWithMaxPop) mol->levels[i].pop = max(pop[i], MIN_POP);
-					else mol->levels[i].pop = max(pop[i], MIN_POP) * underRelaxFac + (1. - underRelaxFac) * mol->levels[i].pop;
+					bool lev_need_to_be_relaxed = false;
+					for (size_t j = 0; j < levels_to_relax.size(); j++) {
+						if (i == levels_to_relax[j] && pop[i] > MIN_POP_FOR_DIFF_CALC) {
+							lev_need_to_be_relaxed = true;
+							break;
+						}
+					}
+					if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * underRelaxFac + (1. - underRelaxFac) * mol->levels[i].pop;
+					else mol->levels[i].pop = max(pop[i], MIN_POP);
 					pops_sum += mol->levels[i].pop;
 				}
+				levels_to_relax.clear();
 				pops_sum = partition_function_ratio / pops_sum;
 				for (size_t i = mol->levels.size(); i-- > 0; ) {
 					mol->levels[i].pop *= pops_sum;
@@ -394,6 +406,7 @@ public:
 		fin.close();
 		this->cerr_output_iter_progress = true;
 		this->partition_function_ratio = 1.0;
+		srand(110589);
 	}
 	
 	RT(istream & cin)
@@ -408,6 +421,7 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
 		this->partition_function_ratio = 1.0;
+		srand(110589);
 	}
 
 	RT(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth)
@@ -425,6 +439,7 @@ public:
 		fin.open("Parameters/Dust_HII_CMB_Jext_Radiation.txt", ios::in);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
+		srand(110589);
 	}
 
 	virtual ~RT()
