@@ -162,6 +162,9 @@ public:
 			mol->rad_trans[i].kabs_dust = mol->rad_trans[i].taud_in * (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT) / modelPhysPars::NdV; //absorption coefficient of the dust inside the maser region
 			// mol->rad_trans[i].JExtHII will be zero if external emission will be taken from file
 		}
+		
+		initial_solution();							// get the initial values of populations
+		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 
 		beta_LVG LVG_beta (beamH); 					// LVG escape probability, see beta_LVG.h
 		
