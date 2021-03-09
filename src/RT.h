@@ -101,45 +101,48 @@ protected:
 		}
 	}
 
-	double kabsf(const size_t & i)	// absorption coefficient for i-th transition without taking into account line overlapping
+	double abs_coeff(const size_t & i)	// absorption coefficient for i-th transition
 	{
-		const size_t & up = mol->rad_trans[i].up_level;
-		const size_t & low = mol->rad_trans[i].low_level;
-		//return mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul;
-		const __float128 a = (__float128)(mol->levels[low].pop * mol->rad_trans[i].Blu);
-		const __float128 b = (__float128)(mol->levels[up].pop * mol->rad_trans[i].Bul);
-		const __float128 c = a - b;
-		return (double)c;
+		auto kabsi = [&](const size_t & i) { 	//absorption coefficient for i-th transition without taking into account line overlapping
+			const size_t & up = mol->rad_trans[i].up_level;
+			const size_t & low = mol->rad_trans[i].low_level;
+			//return mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul;
+			const __float128 a = (__float128)(mol->levels[low].pop * mol->rad_trans[i].Blu);
+			const __float128 b = (__float128)(mol->levels[up].pop * mol->rad_trans[i].Bul);
+			const __float128 c = a - b;
+			return (double)c;
+		};
+
+		double kabs = kabsi(i);
+		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
+			kabs += kabsi(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
+		}
+		return kabs + mol->rad_trans[i].kabs_dust;
 	}
 
-	double emissf(const size_t & i) // emission coefficient for i-th transition without taking into account line overlapping
+	double emiss_coeff(const size_t & i) // emission coefficient for i-th transition
 	{
-		return mol->rad_trans[i].A * mol->levels[mol->rad_trans[i].up_level].pop;
+		auto emissi = [&](const size_t & i) { 	// emission coefficient for i-th transition without taking into account line overlapping
+			return mol->rad_trans[i].A * mol->levels[mol->rad_trans[i].up_level].pop;
+		};
+
+		double emiss = emissi(i);
+		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
+			emiss += emissi(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
+		}
+		return emiss + mol->rad_trans[i].emiss_dust;
 	}
 
 	void compute_tau(const size_t & i)		// optical depth of the maser region for radiative transition i
 	{ // see e.g. Appendix A in Sobolev et al. 1997
-
-		auto tauf = [&](const size_t & i) { 	// this lambda function returns optical depth for i-th transition without taking into account line overlapping
-			return (PLANK_CONSTANT * SPEED_OF_LIGHT / 4. / PI) * modelPhysPars::NdV * kabsf(i);
-		};
-
-		mol->rad_trans[i].tau = tauf(i); 	// compute tau for i-th transition
-		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) mol->rad_trans[i].tau += tauf(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac; //take into account line overlapping
-		mol->rad_trans[i].tau += mol->rad_trans[i].taud_in;
+		mol->rad_trans[i].tau = (PLANK_CONSTANT * SPEED_OF_LIGHT / 4. / PI) * modelPhysPars::NdV * abs_coeff(i) ;
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
 	}
 	
 	void compute_J_S_beta(const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S)		//computes mean intensity, source function, escape probability, and their product for radiative transition i
 	{ // see also equation for Jav in Appendix A of Sobolev et al. 1997
-		double kabs = kabsf(i); 		// part of the line absorption coefficient 
-		double emiss = emissf(i); 		// part of the line emission coefficient
-		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
-			kabs += kabsf(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
-			emiss += emissf(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
-		}
-		emiss += mol->rad_trans[i].emiss_dust;
-		kabs += mol->rad_trans[i].kabs_dust;
+		const double emiss = emiss_coeff(i);
+		const double kabs = abs_coeff(i);
 
 		beta = 1.0e00; 		// escape probability = beta(tau) -> 1 for tau -> 0.0
 		beta_S = 0.0e00; 		// (1 - beta) * source function;
@@ -168,14 +171,8 @@ protected:
 
 	double compute_source_function(const size_t & i)		// computes source function
 	{
-		double kabs = kabsf(i); 	// part of the line absorption coefficient 
-		double emiss = emissf(i); 	// part of the line emission coefficient
-		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
-			kabs += kabsf(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
-			emiss += emissf(mol->rad_trans[i].blends[j].id) * mol->rad_trans[i].blends[j].fac;
-		}
-		emiss += mol->rad_trans[i].emiss_dust;
-		kabs += mol->rad_trans[i].kabs_dust;
+		const double emiss = emiss_coeff(i);
+		const double kabs = abs_coeff(i);
 
 		double S = 0.0; 	// source function;
 		if (fabs(kabs) > 0.0) S = emiss / kabs;
@@ -408,6 +405,8 @@ public:
 		fin.close();
 		this->cerr_output_iter_progress = true;
 		this->partition_function_ratio = 1.0;
+		initial_solution();							// get the initial values of populations
+		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 	
 	RT(istream & cin)
@@ -422,6 +421,8 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
 		this->partition_function_ratio = 1.0;
+		initial_solution();							// get the initial values of populations
+		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 
 	RT(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth)
@@ -439,6 +440,8 @@ public:
 		fin.open("Parameters/Dust_HII_CMB_Jext_Radiation.txt", ios::in);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
+		initial_solution();							// get the initial values of populations
+		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 
 	virtual ~RT()
