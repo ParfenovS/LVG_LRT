@@ -93,10 +93,6 @@ public:
 			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu); //absorption coefficient of the dust inside the maser region
 			// mol->rad_trans[i].JExtHII will be zero if external emission will be taken from file
 		}
-		
-		initial_solution();							// get the initial values of populations
-
-		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 
 		beta_LVG LVG_beta (beamH); 					// LVG escape probability, see beta_LVG.h
 		
