@@ -405,8 +405,6 @@ public:
 		fin.close();
 		this->cerr_output_iter_progress = true;
 		this->partition_function_ratio = 1.0;
-		initial_solution();							// get the initial values of populations
-		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 	
 	RT(istream & cin)
@@ -421,8 +419,6 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
 		this->partition_function_ratio = 1.0;
-		initial_solution();							// get the initial values of populations
-		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 
 	RT(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth)
@@ -440,8 +436,6 @@ public:
 		fin.open("Parameters/Dust_HII_CMB_Jext_Radiation.txt", ios::in);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
-		initial_solution();							// get the initial values of populations
-		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 	}
 
 	virtual ~RT()
