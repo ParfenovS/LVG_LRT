@@ -221,7 +221,7 @@ public:
 				}
 				pop[0] = this->partition_function_ratio - pops_sum;
 				if (solveStatEqSuccess == 0) {
-					there_were_bad_levels = update_check_pops(pop, levelWithMaxRPopDiff, MaxRPopDiff, iter_in, oldpops_Ng, pop_norm, MAX_UNDER_RELAX_FACTOR);
+					there_were_bad_levels = update_check_pops(pop, levelWithMaxRPopDiff, MaxRPopDiff, iter_in, oldpops_Ng, pop_norm);
 					if (cerr_output_iter_progress) {
 						cerr << iter_in << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 					}
