@@ -232,7 +232,7 @@ protected:
 		}
 	}
 
-	void Ng_acceleration(const double pop[], vector <vector <double> > & oldpops, double & pop_norm)
+	void Ng_acceleration(double pop[], vector <vector <double> > & oldpops)
 	{
 		constexpr const size_t m = Ng_order + 1;
 
@@ -283,12 +283,6 @@ protected:
 		// solving equation 8.116 from Gray's maser book
 		const size_t info = dgefa( Cjk, Ng_order, Ng_order, ipvt ); 	// factorization of the matrix Cjk, degfa is the LINPACK function, see linpack/linpack_d.hpp
 		if (info > 0) {
-			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				for (size_t olp_i = 0; olp_i < m; olp_i++) oldpops[i][olp_i] = oldpops[i][olp_i + 1];
-				oldpops[i][m] = pop[i];
-				mol->levels[i].pop = max(pop[i], MIN_POP);
-				pop_norm += mol->levels[i].pop * mol->levels[i].pop;
-			}
 			//cerr << "#warning: searching for Ng acceleration coefficients in RT.h have failed ";
 			return;
 		}
@@ -299,28 +293,19 @@ protected:
 		for (size_t k = 0; k < Ng_order; k++) cascade_summation(err_c, sum_b, bk[k]);
 		sum_b = 1.0 - (sum_b + err_c);
 
-		double pops_sum = 0.0, pops_sum_err = 0.0;
 		for (size_t i = 0; i < mol->levels.size(); i++ ) {
-			mol->levels[i].pop = 0.0;
+			double old_pop = pop[i];
+			pop[i] = 0.0;
 			err_c = 0.0;
 			for (size_t k = 0; k < Ng_order; k++) {
-				cascade_summation(err_c, mol->levels[i].pop, bk[k] * oldpops[i][m-k]);
+				cascade_summation(err_c, pop[i], bk[k] * oldpops[i][m-k]);
 			}
-			mol->levels[i].pop += err_c;
-			mol->levels[i].pop += sum_b * pop[i]; 	// equation 8.107 from Gray's maser book
-			mol->levels[i].pop = max(MIN_POP, mol->levels[i].pop);
-			cascade_summation(pops_sum_err, pops_sum, mol->levels[i].pop);
-			for (size_t olp_i = 0; olp_i < m; olp_i++) oldpops[i][olp_i] = oldpops[i][olp_i + 1];
-			oldpops[i][m] = pop[i];
-		}
-		pops_sum = partition_function_ratio / (pops_sum + pops_sum_err);
-		for (size_t i = 0; i < mol->levels.size(); i++ ) {
-			mol->levels[i].pop *= pops_sum;
-			pop_norm += mol->levels[i].pop * mol->levels[i].pop;
+			pop[i] += err_c;
+			pop[i] += sum_b * old_pop; 	// equation 8.107 from Gray's maser book
 		}
 	}
 
-	bool update_check_pops(const double pop[], size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm, const double & underRelaxFac)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
+	bool update_check_pops(double pop[], size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
 		bool there_were_bad_levels = false;
@@ -339,39 +324,55 @@ protected:
 		pop_norm = 1.e-30;
 		if (MaxRPopDiff < 0) there_were_bad_levels = true;
 		if (!there_were_bad_levels) {
-			if (DoNg && iter > Ng_start && iter % Ng_step == 0) {
-				Ng_acceleration(pop, oldpops_Ng, pop_norm);
-			} else {
-				vector<size_t> levels_to_relax;
-				for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-					if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
-						levels_to_relax.push_back(mol->rad_trans[i].up_level);
-						levels_to_relax.push_back(mol->rad_trans[i].low_level);
-					}
+			if (DoNg && iter > Ng_start) {
+				vector<double> temp_pop;
+				for (size_t i = 0; i < mol->levels.size(); i++) temp_pop.push_back(max(pop[i], MIN_POP));
+				Ng_acceleration(pop, oldpops_Ng);
+				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
+				temp_pop.clear();
+			}
+			vector<size_t> levels_to_relax;
+			double minimum_tau = 0.0;
+			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+				if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
+					levels_to_relax.push_back(mol->rad_trans[i].up_level);
+					levels_to_relax.push_back(mol->rad_trans[i].low_level);
 				}
-				const double var_under_relax_fac = underRelaxFac / (iter % UNDER_RELAX_FAC_PERIOD + 1.);
-				double pops_sum = 0;
-				for (size_t i = mol->levels.size(); i-- > 0; ) {
-					bool lev_need_to_be_relaxed = false;
-					for (size_t j = 0; j < levels_to_relax.size(); j++) {
-						if (i == levels_to_relax[j]) {
-							lev_need_to_be_relaxed = true;
-							break;
-						}
-					}
-					if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
-					else mol->levels[i].pop = max(pop[i], MIN_POP);
-					pops_sum += mol->levels[i].pop;
-				}
-				levels_to_relax.clear();
-				pops_sum = partition_function_ratio / pops_sum;
-				for (size_t i = mol->levels.size(); i-- > 0; ) {
-					mol->levels[i].pop *= pops_sum;
-					pop_norm += mol->levels[i].pop * mol->levels[i].pop;
-					for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
-					oldpops_Ng[i][Ng_order + 1] = mol->levels[i].pop;
+				if (mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
+			}
+			/*vector<size_t> more_levels_to_relax;
+			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+				for (size_t j = 0; j < levels_to_relax.size(); j++) {
+					if (mol->rad_trans[i].up_level == levels_to_relax[j]) more_levels_to_relax.push_back(mol->rad_trans[i].low_level);
+					if (mol->rad_trans[i].low_level == levels_to_relax[j]) more_levels_to_relax.push_back(mol->rad_trans[i].up_level);
 				}
 			}
+			copy(more_levels_to_relax.begin(),more_levels_to_relax.end(),std::back_inserter(levels_to_relax));
+			more_levels_to_relax.clear();*/
+			const double var_under_relax_fac = 1.0 / (ceil(fabs(minimum_tau)));
+			double pops_sum = 0;
+			for (size_t i = mol->levels.size(); i-- > 0; ) {
+				bool lev_need_to_be_relaxed = false;
+				for (size_t j = 0; j < levels_to_relax.size(); j++) {
+					if (i == levels_to_relax[j]) {
+						lev_need_to_be_relaxed = true;
+						break;
+					}
+				}
+				if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
+				else mol->levels[i].pop = max(pop[i], MIN_POP);
+				pops_sum += mol->levels[i].pop;
+			}
+			pops_sum = partition_function_ratio / pops_sum;
+			for (size_t i = mol->levels.size(); i-- > 0; ) {
+				mol->levels[i].pop *= pops_sum;
+				pop_norm += mol->levels[i].pop * mol->levels[i].pop;
+				for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
+				if (!(DoNg && iter > Ng_start)) {
+					oldpops_Ng[i][Ng_order + 1] = max(pop[i], MIN_POP);
+				}
+			}
+			levels_to_relax.clear();
 		}
 		return there_were_bad_levels;
 	}
