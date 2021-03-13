@@ -126,7 +126,7 @@ public:
 			}
 			iter += 1;
 			double dummy_pop_norm = 1.e-30;
-			update_check_pops(pop, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng, dummy_pop_norm, MAX_UNDER_RELAX_FACTOR);
+			update_check_pops(pop, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng, dummy_pop_norm);
 			if (cerr_output_iter_progress) {
 				cerr << iter << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 			}
