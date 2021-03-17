@@ -56,6 +56,7 @@ CMB_TEMPERATURE = 2.728 # [K]
 INNER_DUST_INCLUDED = 0
 #
 DUST_TEMPERATURE_EQUAL_TO_GAS_TEMPERATURE = True
+DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE = False
 
 ###################### END INPUT ######################
 
@@ -64,7 +65,7 @@ LIST_OF_TRANSITIONS = numpy.array(LIST_OF_TRANSITIONS)
 NUMBER_OF_SPECTRAL_LINES = len(LIST_OF_TRANSITIONS)
 TRANSITIONS_FREQS = []
 
-HDENSITIES = numpy.array(HDENSITIES)
+HDENSITIES = numpy.flip(numpy.sort(HDENSITIES), axis=0)
 GAS_TEMPERATURES = numpy.array(GAS_TEMPERATURES)
 SPECIFIC_COLUMN_DENSITIES = numpy.array(SPECIFIC_COLUMN_DENSITIES)
 BEAMING = numpy.array(BEAMING)
@@ -103,7 +104,7 @@ def get_transition_frequencies(filename):
 class input_parameters:
     ''' contains the set of parameters for a given model '''
     def __init__(self, ident, nH, Tg, N_dV, Td, Wd, tauDust, freqDust, pDust, \
-                 Te, Whii, turnFreq, beamH, prev_NdV=None, prev_beam=None):
+                 Te, Whii, turnFreq, beamH, prev_nH=None, prev_NdV=None, prev_beam=None):
         ''' constructor '''
         self.ident = "_" + str(ident)
         self.nH = nH
@@ -120,17 +121,27 @@ class input_parameters:
         self.beamH = beamH
         self.prevBeam = prev_beam
         self.prevNdV = prev_NdV
+        self.prevnH = prev_nH
         self.init_sol_file = ""
         self.final_sol_file = ""
         if UTILIZE_PREVIOUS_SOLUTIONS:
             if self.__allowed_to_write_pops_file():
                 self.final_sol_file = INITIAL_SOLUTION_FILENAME + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
-            if prev_NdV is None and prev_beam is None and INITIAL_SOLUTION == 0:
+            if prev_nH is None and prev_NdV is None and prev_beam is None and INITIAL_SOLUTION == 0:
                 self.init_sol_file = INITIAL_SOLUTION_FILENAME
-            if prev_NdV is None and not prev_beam is None:
-                self.init_sol_file = INITIAL_SOLUTION_FILENAME + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(prev_beam)
-            if not prev_NdV is None:
-                self.init_sol_file = INITIAL_SOLUTION_FILENAME + str(prev_NdV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
+            else:
+                used_nH = nH ; used_NdV = N_dV ; used_beam = beamH
+                if not(prev_nH is None and prev_NdV is None and prev_beam is None):
+                    if prev_nH is not None:
+                        used_nH = prev_nH
+                    if prev_NdV is not None:
+                        used_NdV = prev_NdV
+                        used_nH = nH
+                    if prev_beam is not None:
+                        used_beam = prev_beam
+                        used_NdV = N_dV
+                        used_nH = nH
+                    self.init_sol_file = INITIAL_SOLUTION_FILENAME + str(used_NdV) + "_" + str(used_nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(used_beam)
         else:
             if INITIAL_SOLUTION == 0:
                 self.init_sol_file = INITIAL_SOLUTION_FILENAME
@@ -299,24 +310,25 @@ def make_grid(output_filename="grid_results.txt"):
                     if (DUST_TEMPERATURE_EQUAL_TO_GAS_TEMPERATURE):
                         dust_temp_array = numpy.array([Tgi])
                     for Tdi in dust_temp_array:
-                        for tauDusti in tau_dust_array:
-                            for freqDusti in freq_dust_array:
-                                for pDusti in dust_p_array:
-                                    for Whiii in HII_DILLUTION_FACTORS:
-                                        if (Whiii == 0.0):
-                                            te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
-                                            turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
-                                        else:
-                                            te_array = ELECTRON_TEMPERATURES
-                                            turnFreqi_array = TURNOVER_FREQS
-                                        for Tei in te_array:
-                                            for turnFreqi in turnFreqi_array:
-                                                for beamHi in BEAMING:
-                                                    tasks.append(input_parameters( ids, \
-                                                        nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
-                                                        pDusti, Tei, Whiii, turnFreqi, beamHi
-                                                    ))
-                                                    ids += 1
+                        if (DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE and Tdi >= Tgi) or not DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE:
+                            for tauDusti in tau_dust_array:
+                                for freqDusti in freq_dust_array:
+                                    for pDusti in dust_p_array:
+                                        for Whiii in HII_DILLUTION_FACTORS:
+                                            if (Whiii == 0.0):
+                                                te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
+                                                turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
+                                            else:
+                                                te_array = ELECTRON_TEMPERATURES
+                                                turnFreqi_array = TURNOVER_FREQS
+                                            for Tei in te_array:
+                                                for turnFreqi in turnFreqi_array:
+                                                    for beamHi in BEAMING:
+                                                        tasks.append(input_parameters( ids, \
+                                                            nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
+                                                            pDusti, Tei, Whiii, turnFreqi, beamHi
+                                                        ))
+                                                        ids += 1
     print("there will be " + str(ids) + " models")
     pool = multiprocessing.Pool(processes=UTILIZED_NUMBER_OF_CORES)
     results = []
@@ -333,7 +345,21 @@ def make_grid(output_filename="grid_results.txt"):
         fout.write(results[i] + "\n")
     fout.close()
 
-def make_grid_saving_populations(output_filename="grid_results.txt"):
+def run_and_wait_tasks(tasks, temp_results, output_filename):
+    if len(tasks) > 0:
+        pool = multiprocessing.Pool(processes=UTILIZED_NUMBER_OF_CORES)
+        do_work = pool.map_async(compute_model, tasks, callback=temp_results.append)
+        do_work.wait() # Wait on the results
+        cur_result = numpy.array(temp_results[0])
+        #results = numpy.append(results, cur_result)
+        fout = open(output_filename, 'a')
+        for result_i in cur_result:
+            fout.write(result_i + "\n")
+        fout.close()
+    tasks = []
+    temp_results = []
+
+def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
     ''' computes a grid of models, uses already computed populations as an initial solution '''
     print("there will be no more than " + str(len(HDENSITIES) * len(GAS_TEMPERATURES) * len(SPECIFIC_COLUMN_DENSITIES) * \
       len(BEAMING) * len(DUST_TEMPERATURES) * len(DUST_DILLUTION_FACTORS) * \
@@ -349,13 +375,15 @@ def make_grid_saving_populations(output_filename="grid_results.txt"):
     fout.close()
     
     #results = numpy.empty(shape=(0))
+    tasks = []
+    temp_results = []
+
     ids = 0
     prev_beam = PREVIOUS_BEAMING
     for beamHi in BEAMING:
         Previous_N_dVi = None
         for N_dVi in SPECIFIC_COLUMN_DENSITIES:
-            tasks = []
-            temp_results = []
+            Previous_nH = None
             for nHi in HDENSITIES:
                 if N_dVi < 1.5e9 * nHi:
                     for Tgi in GAS_TEMPERATURES:
@@ -375,35 +403,30 @@ def make_grid_saving_populations(output_filename="grid_results.txt"):
                             if (DUST_TEMPERATURE_EQUAL_TO_GAS_TEMPERATURE):
                                 dust_temp_array = numpy.array([Tgi])
                             for Tdi in dust_temp_array:
-                                for tauDusti in tau_dust_array:
-                                    for freqDusti in freq_dust_array:
-                                        for pDusti in dust_p_array:
-                                            for Whiii in HII_DILLUTION_FACTORS:
-                                                if (Whiii == 0.0):
-                                                    te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
-                                                    turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
-                                                else:
-                                                    te_array = ELECTRON_TEMPERATURES
-                                                    turnFreqi_array = TURNOVER_FREQS
-                                                for Tei in te_array:
-                                                    for turnFreqi in turnFreqi_array:
-                                                        tasks.append(input_parameters( ids, \
-                                                            nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
-                                                            pDusti, Tei, Whiii, turnFreqi, beamHi, \
-                                                            Previous_N_dVi, prev_beam \
-                                                        ))
-                                                        ids += 1
-            if len(tasks) > 0:
-                pool = multiprocessing.Pool(processes=UTILIZED_NUMBER_OF_CORES)
-                do_work = pool.map_async(compute_model, tasks, callback=temp_results.append)
-                do_work.wait() # Wait on the results
-                cur_result = numpy.array(temp_results[0])
-                #results = numpy.append(results, cur_result)
-                fout = open(output_filename, 'a')
-                for result_i in cur_result:
-                    fout.write(result_i + "\n")
-                fout.close()
+                                if (DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE and Tdi >= Tgi) or not DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE:
+                                    for tauDusti in tau_dust_array:
+                                        for freqDusti in freq_dust_array:
+                                            for pDusti in dust_p_array:
+                                                for Whiii in HII_DILLUTION_FACTORS:
+                                                    if (Whiii == 0.0):
+                                                        te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
+                                                        turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
+                                                    else:
+                                                        te_array = ELECTRON_TEMPERATURES
+                                                        turnFreqi_array = TURNOVER_FREQS
+                                                    for Tei in te_array:
+                                                        for turnFreqi in turnFreqi_array:
+                                                            tasks.append(input_parameters( ids, \
+                                                                nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
+                                                                pDusti, Tei, Whiii, turnFreqi, beamHi, \
+                                                                Previous_nH, Previous_N_dVi, prev_beam \
+                                                            ))
+                                                            ids += 1
+                if Previous_N_dVi is None and prev_beam is None: run_and_wait_tasks(tasks, temp_results, output_filename)
+                Previous_nH = nHi
+            if prev_beam is None: run_and_wait_tasks(tasks, temp_results, output_filename)
             Previous_N_dVi = N_dVi
+        run_and_wait_tasks(tasks, temp_results, output_filename)
         prev_beam = beamHi
 
 if __name__ == "__main__":
