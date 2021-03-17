@@ -345,19 +345,17 @@ def make_grid(output_filename="grid_results.txt"):
         fout.write(results[i] + "\n")
     fout.close()
 
-def run_and_wait_tasks(tasks, temp_results, output_filename):
+def run_and_wait_tasks(tasks, output_filename):
     if len(tasks) > 0:
+        temp_results = []
         pool = multiprocessing.Pool(processes=UTILIZED_NUMBER_OF_CORES)
         do_work = pool.map_async(compute_model, tasks, callback=temp_results.append)
         do_work.wait() # Wait on the results
         cur_result = numpy.array(temp_results[0])
-        #results = numpy.append(results, cur_result)
         fout = open(output_filename, 'a')
         for result_i in cur_result:
             fout.write(result_i + "\n")
         fout.close()
-    tasks = []
-    temp_results = []
 
 def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
     ''' computes a grid of models, uses already computed populations as an initial solution '''
@@ -376,7 +374,6 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
     
     #results = numpy.empty(shape=(0))
     tasks = []
-    temp_results = []
 
     ids = 0
     prev_beam = PREVIOUS_BEAMING
@@ -422,11 +419,16 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
                                                                 Previous_nH, Previous_N_dVi, prev_beam \
                                                             ))
                                                             ids += 1
-                if Previous_N_dVi is None and prev_beam is None: run_and_wait_tasks(tasks, temp_results, output_filename)
+                if Previous_N_dVi is None and prev_beam is None:
+                    run_and_wait_tasks(tasks, output_filename)
+                    tasks = []
                 Previous_nH = nHi
-            if prev_beam is None: run_and_wait_tasks(tasks, temp_results, output_filename)
+            if prev_beam is None:
+                run_and_wait_tasks(tasks, output_filename)
+                tasks = []
             Previous_N_dVi = N_dVi
-        run_and_wait_tasks(tasks, temp_results, output_filename)
+        run_and_wait_tasks(tasks, output_filename)
+        tasks = []
         prev_beam = beamHi
 
 if __name__ == "__main__":
