@@ -10,7 +10,7 @@ f = open('pops_vs_time.bin')
 num_of_levs = np.fromfile(f, dtype=np.dtype('u8'), count=1)
 num_of_levs = int(num_of_levs[0])
 rectype = np.dtype( [ ('time', 'd'), ('pops', 'd', num_of_levs) ] )
-recs = np.fromfile(f, dtype=rectype)
+recs = np.fromfile(f, dtype=rectype, offset=8)
 
 timestep = []
 for i in range(1, len(recs['time'])):
