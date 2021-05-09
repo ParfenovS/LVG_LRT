@@ -178,7 +178,6 @@ private:
 			sfin >> id_up >> id_low >> J;
 			sfin.clear();
 			mod->set_trans(id, id_up, id_low, "J", J);
-			mod->set_trans(id, id_low, id_up, "J", J);
 			id += 1;
 		}
 
