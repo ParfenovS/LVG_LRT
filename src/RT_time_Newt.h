@@ -391,13 +391,13 @@ public:
 							binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 						}
 						// predictor
-						if ((F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations) || time < (16*3600)) mols[ispec].levels[i].pop = fma(dpop_dt[ispec][i], h, mols[ispec].levels[i].pop);
+						if (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations) mols[ispec].levels[i].pop = fma(dpop_dt[ispec][i], h, mols[ispec].levels[i].pop);
 					}
 				}
 				rn = h / h_old;
 				BDF_coeffs[0] = (1+2*rn)/(1+rn); BDF_coeffs[1] = -(1+rn); BDF_coeffs[2] = rn*rn/(1+rn);
 			}
-		} while ((F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations) || time < (16*3600));
+		} while (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations);
 
 		clear_mem_close_files(A, pop, Jac, dpop_dt, oldpops_Ng, oldpops_time, binpopfile, binTbrfile, binTexfile, bintaufile);
 
