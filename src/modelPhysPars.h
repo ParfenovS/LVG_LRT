@@ -3,18 +3,22 @@
 
 struct modelPhysPars						// stores physical conditions
 {
+	static size_t nSpecies;					// number of molecular species
+	static size_t collPartCounter;			// index used to assign fractional abundances of collisional agents to a given molecular species
 	static double Tks;						// gas kinetic temperature [K];
 	static double Hdens;					// number density of H2 [1/cm3]; 
-	static vector<double> fraction_H2; 		// array with fractional abundances (wrt Hdens) of collisional agents;
-	static double NdV;						// specific column density [cm-3 s]
-	static double abundance; 				// molecular abundance (wrt H2)
+	static vector<double> fraction_H2;		// array with fractional abundances (wrt Hdens) of collisional agents;
+	static vector<double> NdV;				// specific column density [cm-3 s]
+	static vector<double> abundance;		// molecular abundance (wrt H2)
 };
 
+size_t modelPhysPars::nSpecies;
+size_t modelPhysPars::collPartCounter;
 double modelPhysPars::Tks;
-vector<double> modelPhysPars::fraction_H2;
 double modelPhysPars::Hdens;
-double modelPhysPars::NdV;
-double modelPhysPars::abundance;
+vector<double> modelPhysPars::fraction_H2;
+vector<double> modelPhysPars::NdV;
+vector<double> modelPhysPars::abundance;
 
 template <typename T>
 void initialize_modelPhysPars(T & fin)
@@ -31,10 +35,13 @@ void initialize_modelPhysPars(T & fin)
 	modelPhysPars::Hdens = readline<double>(fin);
 
 	getline(fin, str);
-	modelPhysPars::NdV = readline<double>(fin);
+	modelPhysPars::nSpecies = readline<size_t>(fin);
 
 	getline(fin, str);
-	modelPhysPars::abundance = readline<double>(fin);
+	for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) modelPhysPars::NdV.push_back(readline<double>(fin));
+
+	getline(fin, str);
+	for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) modelPhysPars::abundance.push_back(readline<double>(fin));
 
 	getline(fin,str);
 	while (getline(fin, str)) {
@@ -42,4 +49,6 @@ void initialize_modelPhysPars(T & fin)
 		if (str.size() != 0) modelPhysPars::fraction_H2.push_back( stod(str) );
 		else break;
 	}
+
+	modelPhysPars::collPartCounter = 0;
 }
