@@ -13,7 +13,7 @@
 
 int main(int argc, char* argv[])
 {
-	// choose whether to solve statistical equilibrium equations (with RT_point_iterations class) or integrate kinetic equations for level populations over time (with RT_time_Newt or RT_time class)
+	// choose whether to solve statistical equilibrium equations (with RT_point_iterations class) or integrate kinetic equations for level populations over time (with RT_time_Newt class)
 	typedef typename std::conditional<TIME_INTEGRATION_OF_KINETIC_EQUATIONS, RT_time_Newt, RT_point_iterations>::type RTclass;
 	RTclass *LRT = nullptr;
 
@@ -34,13 +34,15 @@ int main(int argc, char* argv[])
 
 		{
 			molDataRead molReader;
-			molReader.read_data(LRT->filename_lamda, LRT->filename_pops_in, LRT->mol); // reading file with molecular data in LAMDA format
+			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) molReader.read_data(LRT->filename_lamda[ispec], &LRT->mols[ispec]); // reading file with molecular data in LAMDA format
 		}
 
 		LRT_failure = LRT->radiative_transfer();	// radiative transfer calculations
 		if (LRT_failure == 0) {
-			if (argc == 1) output_results(LRT->mol, LRT->filename_pops_out); 	// output results into files
-			else output_results(LRT->mol, LRT->filename_pops_out, cout); 		// output results into console
+			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+				if (argc == 1) output_results(&LRT->mols[ispec], LRT->filename_pops_out[ispec]); 	// output results into files
+				else output_results(&LRT->mols[ispec], LRT->filename_pops_out[ispec], cout); 		// output results into console
+			}
 		}
 	}
 	catch (const exception & e) {
