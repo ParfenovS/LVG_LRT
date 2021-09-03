@@ -395,7 +395,8 @@ protected:
 		return there_were_bad_levels;
 	}
 
-	void init_some_parameters() {
+	void init_some_parameters()
+	{
 		if (this->input_full_partition_function.size() > 1) {
 			if (this->input_full_partition_function.size() != modelPhysPars::nSpecies) runtime_error("size of input_full_partition_function != 1 or to a number of molecular species in RT.h and hiddenParameters.h");
 		}
