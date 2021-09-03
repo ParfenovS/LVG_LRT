@@ -6,7 +6,7 @@ class RT_point_iterations : public RT		// solves statistical equilibrium equatio
 {
 private:
 	
-    double get_condition_number(double A0[], molModel *mol)
+	double get_condition_number(double A0[], molModel *mol)
 	{
 		const size_t & n = mol->levels.size();
 		double *s = new double[n];
@@ -129,8 +129,8 @@ public:
 			A.push_back(new double[mols[ispec].levels.size()*mols[ispec].levels.size()]);
 		}
 
-        double MaxRPopDiff;
-        size_t levelWithMaxRPopDiff;
+		double MaxRPopDiff;
+		size_t levelWithMaxRPopDiff;
 		size_t speciesWithMaxRPopDiff;
 
 		unsigned int iter = 0;
@@ -168,7 +168,7 @@ public:
 		}
 		oldpops_Ng.clear();
 
-        if (iter == maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
+		if (iter == maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 		
 		prepare_results_for_output(LVG_beta);
 		
