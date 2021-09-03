@@ -2,10 +2,16 @@
 220
 # Molecular hydrogen density, nH_2, cm^-3
 160000.0
+# Number of molecular species
+2
 # Specific column density, cm^-3 s
+5e+12
 5e+12
 # Molecular abundance (wrt H2)
 1.e-7
+1.e-7
 # Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile:
+0.25
+0.75
 0.25
 0.75
