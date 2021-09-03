@@ -6,7 +6,7 @@ class RT_point_iterations : public RT		// solves statistical equilibrium equatio
 {
 private:
 	
-    double get_condition_number(double A0[])
+    double get_condition_number(double A0[], molModel *mol)
 	{
 		const size_t & n = mol->levels.size();
 		double *s = new double[n];
@@ -23,7 +23,7 @@ private:
 		return cond_number;
 	}
 
-	void populate_matrix_vector(double A[], double B[], beta_LVG & LVG_beta)	// fill the matrix A and vector B from the statistical equilibrium equations system A*X=B
+	void populate_matrix_vector(double A[], double B[], beta_LVG & LVG_beta, molModel *mol)	// fill the matrix A and vector B from the statistical equilibrium equations system A*X=B
 	{
 		const size_t & n = mol->levels.size();
 		
@@ -40,8 +40,8 @@ private:
         // Radiative transitions
 		double temp_var, dummy_S, dummy_beta, dummy_betaS;
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			compute_tau(i);
-			compute_J_S_beta(i, LVG_beta, dummy_S, dummy_beta, dummy_betaS);
+			compute_tau(i, mol);
+			compute_J_S_beta(mol, i, LVG_beta, dummy_S, dummy_beta, dummy_betaS);
             
 			const size_t & up = mol->rad_trans[i].up_level;
 			const size_t & low = mol->rad_trans[i].low_level;
@@ -59,7 +59,7 @@ private:
 			A[0 + i*n] = 1.0;	// A[0][i] = 1.0 - the equation for the first level is replaced by the particle number conservation law, i.e. the sum of populations should be = 1 or = partition functions ratio
 			B[i] = 0.0;
 		}
-		B[0] = this->partition_function_ratio; // the sum of populations should be = 1 or = partition functions ratio
+		B[0] = this->partition_function_ratio[mol->idspec]; // the sum of populations should be = 1 or = partition functions ratio
 	}
 
 	void prepare_results_for_output(beta_LVG & LVG_beta)
@@ -68,15 +68,19 @@ private:
 		double dummy_S = 0.0;
 		double dummy_beta = 0.0;
 		double dummy_betaS = 0.0;
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			compute_tau(i); 		// computing final optical depths that can be used for output
-			compute_J_S_beta(i, LVG_beta, dummy_S, dummy_beta, dummy_betaS); 	// computing final mean intensities that can be used for output
-			compute_Tex(i); 		// computing excitation temperature that can be used for output
-			compute_brightness_temperature(i); 	// computing brightness temperature and intensity of the emission
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
+				compute_tau(i, &mols[ispec]); 		// computing final optical depths that can be used for output
+				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_betaS); 	// computing final mean intensities that can be used for output
+				compute_Tex(i, &mols[ispec]); 		// computing excitation temperature that can be used for output
+				compute_brightness_temperature(i, &mols[ispec]); 	// computing brightness temperature and intensity of the emission
+			}
 		}
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			// the output optical depth is an optical depth along the line of sight, thus one need to take into account beaming
-			mol->rad_trans[i].tau *= beamH;
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
+				// the output optical depth is an optical depth along the line of sight, thus one need to take into account beaming
+				mols[ispec].rad_trans[i].tau *= beamH;
+			}
 		}
 	}
 
@@ -84,55 +88,84 @@ public:
 
 	int radiative_transfer() override		// main function which should be called to perform radiative transfer calculations
 	{
+		initial_solution();							// get the initial values of populations
+		
 		// set the external emission mean intensity, optical depth, absorption and emission coefficients
-		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-			mol->rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mol->rad_trans[i].nu); //external emission from dust, cosmic microwave background or file
-			mol->rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mol->rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
-			mol->rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mol->rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
-			mol->rad_trans[i].kabs_dust = mol->rad_trans[i].taud_in * (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT) / modelPhysPars::NdV; //absorption coefficient of the dust inside the maser region
-			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu); //absorption coefficient of the dust inside the maser region
-			// mol->rad_trans[i].JExtHII will be zero if external emission will be taken from file
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
+				mols[ispec].rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mols[ispec].rad_trans[i].nu); //external emission from dust, cosmic microwave background or file
+				mols[ispec].rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mols[ispec].rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
+				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth, ispec); //optical depth of the dust inside the maser region
+				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT) / modelPhysPars::NdV[ispec]; //absorption coefficient of the dust inside the maser region
+				mols[ispec].rad_trans[i].emiss_dust = mols[ispec].rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mols[ispec].rad_trans[i].nu); //absorption coefficient of the dust inside the maser region
+				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
+			}
 		}
 		
-		initial_solution();							// get the initial values of populations
 		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 
 		beta_LVG LVG_beta (beamH); 					// LVG escape probability, see beta_LVG.h
 		
-		vector <vector <double> > oldpops_Ng;		// stores populations used for Ng acceleration
-		for (size_t i = 0; i < mol->levels.size(); i++) {
-			oldpops_Ng.push_back(vector <double>());
-			for (size_t j = 0; j < (Ng_order + 2); j++) {
-				oldpops_Ng[i].push_back(mol->levels[i].pop);
+		vector <vector <vector <double> > > oldpops_Ng;		// stores populations used for Ng acceleration
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			oldpops_Ng.push_back(vector <vector <double> >());
+			for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+				oldpops_Ng[ispec].push_back(vector <double>());
+				for (size_t j = 0; j < (Ng_order + 2); j++) {
+					oldpops_Ng[ispec][i].push_back(mols[ispec].levels[i].pop);
+				}
 			}
+		}
+
+		vector <double*> pop;
+		pop.reserve(modelPhysPars::nSpecies);
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			pop.push_back(new double[mols[ispec].levels.size()]);
+		}
+
+		vector <double*> A; 	// reserve space for matrix A from the statistical equilibrium equations system A*X=B
+		A.reserve(modelPhysPars::nSpecies);
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			A.push_back(new double[mols[ispec].levels.size()*mols[ispec].levels.size()]);
 		}
 
         double MaxRPopDiff;
         size_t levelWithMaxRPopDiff;
-
-        double *A = new double[mol->levels.size()*mol->levels.size()]; 	// reserve space for matrix A from the statistical equilibrium equations system A*X=B
-        double *pop = new double[mol->levels.size()];
+		size_t speciesWithMaxRPopDiff;
 
         unsigned int iter = 0;
         do {
-			populate_matrix_vector(A, pop, LVG_beta);
-			//double cond_number = get_condition_number(A);
-			size_t solveStatEqSuccess = solve_eq_sys(A, pop);	// solve statistical equilibrium equation with LU decomposition, solution is stored in mol->levels[i].pop
-			if (solveStatEqSuccess != 0) {						// the solution can't be found
-				delete[] A; delete[] pop;
-				oldpops_Ng.clear();
-				cerr << "#error: solve_stat_equilibrium failed, info = " << solveStatEqSuccess << endl;
-				return 1;
+			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+				populate_matrix_vector(A[ispec], pop[ispec], LVG_beta, &mols[ispec]);
+				//double cond_number = get_condition_number(A[ispec], &mols[ispec]);
+				size_t solveStatEqSuccess = solve_eq_sys(A[ispec], pop[ispec], &mols[ispec]);	// solve statistical equilibrium equation with LU decomposition, solution is stored in mol->levels[i].pop
+				if (solveStatEqSuccess != 0) {						// the solution can't be found
+					for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
+						delete[] pop[ispec1];
+						delete[] A[ispec1];
+					}
+					oldpops_Ng.clear();
+					cerr << "#error: solve_stat_equilibrium failed, info = " << solveStatEqSuccess << endl;
+					return 1;
+				}
 			}
 			iter += 1;
 			double dummy_pop_norm = 1.e-30;
-			update_check_pops(pop, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng, dummy_pop_norm);
+			levelWithMaxRPopDiff = 0;
+			speciesWithMaxRPopDiff = 0;
+			MaxRPopDiff = -1.0;
+			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+				update_check_pops(&mols[ispec], pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng[ispec], dummy_pop_norm);
+			}
 			if (cerr_output_iter_progress) {
-				cerr << iter << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
+				cerr << iter << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
 			}
 		} while (MaxRPopDiff > MAX_DpopsDt_EPS && iter < maxNumberOfIterations);
 
-		delete[] A; delete[] pop;
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			delete[] pop[ispec];
+			delete[] A[ispec];
+		}
 		oldpops_Ng.clear();
 
         if (iter == maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
@@ -142,13 +175,10 @@ public:
 		return 0;
 	}
 
-	RT_point_iterations() noexcept : RT()
+	RT_point_iterations() : RT()
 	{}
 
 	RT_point_iterations(istream & cin) : RT(cin)
-	{}
-
-	RT_point_iterations(const unsigned short & initialSolutionSource, const double & MAX_POPS_EPS, const unsigned long & maxNumberOfIterations, const double & beamH, const double & lineWidth) : RT(initialSolutionSource, MAX_POPS_EPS, maxNumberOfIterations, beamH, lineWidth)
 	{}
 };
 
