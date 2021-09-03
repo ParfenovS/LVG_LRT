@@ -11,9 +11,9 @@ private:
 
 	vector<vector <size_t> > C_counter;
 	
-	void compute_C(const size_t & id_up, const size_t & id_low) 				// compute collisional rate of transition from lower (j) to upper (i) level; i and j begin from 0;
+	void compute_C(const size_t & id_up, const size_t & id_low, const size_t & num_of_coll_partners) 				// compute collisional rate of transition from lower (j) to upper (i) level; i and j begin from 0;
 	{
-	    if (C_counter[id_up][id_low] == modelPhysPars::fraction_H2.size()) {	// check if one already assigned Cji coef. and if one took into account all collisional agents;
+	    if (C_counter[id_up][id_low] == num_of_coll_partners) {	// check if one already assigned Cji coef. and if one took into account all collisional agents;
 			if (levels[id_low].g != 0.0 && modelPhysPars::Tks != 0.0) {			// check if one have all quantities to compute Cji;
 				const double dE = levels[id_low].E - levels[id_up].E;
 				coll_trans[id_low][id_up] = (levels[id_up].g / (double)levels[id_low].g) * coll_trans[id_up][id_low] * exp(dE / modelPhysPars::Tks * (SPEED_OF_LIGHT*PLANK_CONSTANT/BOLTZMANN_CONSTANT));
@@ -27,6 +27,8 @@ private:
 
 public:
 	
+	size_t idspec; 							// index of a given molecular species
+	size_t num_of_coll_partners;			// number of collisional partners
 	vector<level> levels;					// array of levels; see level class definition in level.h;
 	vector<vector <double> > coll_trans;	// 2d-array of collisional transitions;
 	vector<radiative_transition> rad_trans; // array of radiative transitions; see rad_transition class definition in transition.h;
@@ -74,10 +76,10 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 					}
 				}
 			}
-			if (C_counter[id_up][id_low] > modelPhysPars::fraction_H2.size()) throw runtime_error("error: C_counter > fraction_H2.size() in set_trans function in molModel.h");
-			coll_trans[id_up][id_low] += modelPhysPars::fraction_H2[C_counter[id_up][id_low]]*get<double>(par_value)*modelPhysPars::Hdens; 	// sum Cij for all collisional agents
+			if (C_counter[id_up][id_low] > num_of_coll_partners) throw runtime_error("error: C_counter > fraction_H2.size() in set_trans function in molModel.h");
+			coll_trans[id_up][id_low] += modelPhysPars::fraction_H2[modelPhysPars::collPartCounter + C_counter[id_up][id_low]]*get<double>(par_value)*modelPhysPars::Hdens; 	// sum Cij for all collisional agents
 			C_counter[id_up][id_low] += 1;
-			compute_C(id_up, id_low);
+			compute_C(id_up, id_low, num_of_coll_partners);
 		}
 		else throw runtime_error("unknown par_name input parameter in set_trans function in molModel.h");
 	}
@@ -161,7 +163,12 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 
 	molModel() noexcept
 	{
+		idspec = 0;
+	}
 
+	molModel(const size_t & idspec_in) noexcept
+	{
+		idspec = idspec_in;
 	}
 	
 	~molModel()
