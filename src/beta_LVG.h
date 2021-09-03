@@ -23,7 +23,8 @@ private:
 		double F, F_old, y, step, sum;
 
 		auto integrand = [&] (const double & y) -> double {
-			double integ_fac = ( 1. + sig * y *y );
+			//double integ_fac = ( 1. + sig * y *y );
+			double integ_fac = fma(sig * y, y, 1.0);
 			return integ_fac * exp( - tau/integ_fac ); 	// = (1+sigma*y*y) * exp[ -tau/(1+sigma*y*y) ]
 		}; // function under the integral in equation A1 from Langer & Watson
 
