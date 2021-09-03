@@ -133,8 +133,8 @@ public:
         size_t levelWithMaxRPopDiff;
 		size_t speciesWithMaxRPopDiff;
 
-        unsigned int iter = 0;
-        do {
+		unsigned int iter = 0;
+		do {
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 				populate_matrix_vector(A[ispec], pop[ispec], LVG_beta, &mols[ispec]);
 				//double cond_number = get_condition_number(A[ispec], &mols[ispec]);
