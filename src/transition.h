@@ -7,10 +7,12 @@ private:
 
 	struct lineOverlapping 		// this structure is used to store the data on lines which are overlpapped with a given transition; the overlapping is local only
 	{
+		size_t ispec; 			// id of molecular species which is blended with a given transition
 		size_t id; 				// id of radiative transition which is blended with a given transition
 		double fac; 			// the fraction of the blended line which overlaps with a given transition
 
-		lineOverlapping(const size_t & blend_id, const double & vel_fac) {
+		lineOverlapping(const size_t & blend_ispec, const size_t & blend_id, const double & vel_fac) {
+			ispec = blend_ispec;
 			id = blend_id;
 			fac = vel_fac;
 		}
@@ -55,8 +57,8 @@ public:
 		blends.clear();
 	}
 
-	void add_overlapped_line(const size_t & blend_id, const double & vel_fac) 	// adds an element in the vector of lines that are overlapped with a given transition
+	void add_overlapped_line(const size_t & blend_ispec, const size_t & blend_id, const double & vel_fac) 	// adds an element in the vector of lines that are overlapped with a given transition
 	{
-		blends.push_back(lineOverlapping(blend_id, vel_fac));
+		blends.push_back(lineOverlapping(blend_ispec, blend_id, vel_fac));
 	}
 };
