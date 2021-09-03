@@ -1,2 +1,3 @@
-1
-2
+#molid 	 transid 	 up->low 	 freq., GHz 	 tau 	 Brightness temperature 	 Excitation temperature
+2 	 1 	 2 -> 1 	 4.829660e+00 	 -1.512530e+00 	 3.625275e+04 	 -3.280275e+02
+2 	 23 	 16 -> 15 	 6.550000e-04 	 -2.627254e+00 	 1.283575e+05 	 -3.716874e-02
