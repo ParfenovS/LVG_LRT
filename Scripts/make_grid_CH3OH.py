@@ -33,8 +33,8 @@ MAXIMUM_DpopDt_OR_popDiff = 1.e-4
 MAXIMUM_NUMBER_OF_ITERATIONS = 50000
 BEAMING = [1.0, 10.0]
 LINE_WIDTH = 2.0
-#LIST_OF_TRANSITIONS = [[0, 6119], [0, 2373], [0, 2125], [0, 1624], [0, 1430], [0, 1379], [0, 4792], [0, 6860]] # A-methanol transitions
-LIST_OF_TRANSITIONS = [[0, 399], [0, 11883], [0, 10204], [0, 12446], [0, 11699], [0, 10211], [0, 2850], [0, 314], [0, 1489], [0, 3523], [0, 5690], [0, 11699], [0, 8933]] # E-methanol transitions
+#LIST_OF_TRANSITIONS = [[1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860]] # A-methanol transitions
+LIST_OF_TRANSITIONS = [[1, 399], [1, 11883], [1, 10204], [1, 12446], [1, 11699], [1, 10211], [1, 2850], [1, 314], [1, 1489], [1, 3523], [1, 5690], [1, 11699], [1, 8933]] # E-methanol transitions
 #### Dust parameters, dust emission is computed as:
 #### J = DUST_DILLUTION_FACTORS * (1 - exp(DUST_OPTICAL_DEPTHS_AT_FREQS0 * (nu/DUST_FREQS0)^DUST_P)) * planck_function(DUST_TEMPERATURES,nu)
 DUST_TEMPERATURES = [220] #[K]
