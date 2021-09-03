@@ -29,12 +29,12 @@ private:
 /*
 ** reading file with molecular data in LAMDA format
 */
-	void read_LAMDA(const string & filename, molModel *mod)
+	void read_LAMDA(string filename, molModel *mod)
 	{
 		string str,Q_num;
 		size_t id, id_up, id_low;
 		double E, g, A, nu, T_C;
-		size_t num_of_levels_lamda,num_of_rad_trans,num_of_coll_trans,num_of_coll_temps,num_of_coll_partners;
+		size_t num_of_levels_lamda,num_of_rad_trans,num_of_coll_trans,num_of_coll_temps;
 
 		fin.open(filename.c_str(), ios::in);
 
@@ -79,8 +79,8 @@ private:
 ** collisional coefficients
 */
 		getline(fin,str);
-		num_of_coll_partners = readline<size_t>(fin);
-		for (size_t k = 0; k < num_of_coll_partners; k++) {
+		mod->num_of_coll_partners = readline<size_t>(fin);
+		for (size_t k = 0; k < mod->num_of_coll_partners; k++) {
 			for (short i = 0; i < 3; i++) getline(fin, str);
 
 			num_of_coll_trans = readline<size_t>(fin);
@@ -117,6 +117,7 @@ private:
 			delete[] T;
 			delete[] C;
 		}
+		modelPhysPars::collPartCounter += mod->num_of_coll_partners;
 				
 		fin.close();
 	}
@@ -124,7 +125,7 @@ private:
 /*
 ** reading file with levels population
 */
-	void read_pops(const string & filename, molModel *mod)
+	void read_pops(string filename, molModel *mod)
 	{
 		string str;
 
@@ -154,9 +155,9 @@ private:
 /*
 ** reading file with the emission mean intensity
 */
-	void read_J(const string & filename, molModel *mod)
+	void read_J(string filename, molModel *mod)
 	{
-		size_t id_up, id_low;
+		size_t id_up, id_low, id_spec;
 		double J;
 		string str;
 
@@ -175,10 +176,12 @@ private:
 			str = trim(str);
 			if (str.size() == 0) break;
 			sfin.str(str);
-			sfin >> id_up >> id_low >> J;
+			sfin >> id_spec >> id_up >> id_low >> J;
 			sfin.clear();
-			mod->set_trans(id, id_up, id_low, "J", J);
-			id += 1;
+			if (id_spec == mod->idspec + 1) {
+				mod->set_trans(id, id_up, id_low, "J", J);
+				id += 1;
+			}
 		}
 
 		fin.close();
@@ -194,14 +197,20 @@ public:
 	{
 	}
 
-	void read_data(const string & filename_lamda, const string & filename_pops, molModel *mod)
+	void read_data(string filename_lamda, molModel *mod)
 	{
 		read_LAMDA(filename_lamda, mod);
-		read_pops(filename_pops, mod);
 		mod->check_data(); // check whether frequencies were given in Hz; computes Einstein B coefficients if needed
 	}
 
-	void read_data(const string & filename_lamda, const string & filename_pops, const string & filename_J, molModel *mod)
+	void read_data(string filename_lamda, string filename_J, molModel *mod)
+	{
+		read_LAMDA(filename_lamda, mod);
+		mod->check_data(); // check whether frequencies were given in Hz; computes Einstein B coefficients if needed
+		read_J(filename_J, mod);
+	}
+
+	void read_data(string filename_lamda, string filename_pops, string filename_J, molModel *mod)
 	{
 		read_LAMDA(filename_lamda, mod);
 		read_pops(filename_pops, mod);
