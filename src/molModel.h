@@ -164,11 +164,13 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 	molModel() noexcept
 	{
 		idspec = 0;
+		num_of_coll_partners = 0;
 	}
 
 	molModel(const size_t & idspec_in) noexcept
 	{
 		idspec = idspec_in;
+		num_of_coll_partners = 0;
 	}
 	
 	~molModel()
