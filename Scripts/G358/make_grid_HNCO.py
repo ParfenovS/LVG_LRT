@@ -32,7 +32,7 @@ MAXIMUM_DpopDt_OR_popDiff = 1.e-10
 MAXIMUM_NUMBER_OF_ITERATIONS = 5000000
 BEAMING = [1.0]
 LINE_WIDTH = 0.1
-LIST_OF_TRANSITIONS = [24]
+LIST_OF_TRANSITIONS = [1, 24]
 #### Dust parameters, dust emission is computed as:
 #### J = DUST_DILLUTION_FACTORS * (1 - exp(DUST_OPTICAL_DEPTHS_AT_FREQS0 * (nu/DUST_FREQS0)^DUST_P)) * planck_function(DUST_TEMPERATURES,nu)
 DUST_TEMPERATURES = numpy.arange(50, 310, 10) #[K]
@@ -93,7 +93,7 @@ def get_transition_frequencies(filename):
         line = fin.readline().split()
         trans_id = int(line[0])
         for j in LIST_OF_TRANSITIONS:
-            if j == trans_id:
+            if j[1] == trans_id:
                 TRANSITIONS_FREQS.append(float(line[4]))
     fin.close()
     if len(TRANSITIONS_FREQS) < NUMBER_OF_SPECTRAL_LINES:
@@ -166,6 +166,8 @@ def prepare_input(pars, in_pops_file="", out_pops_file=""):
     cin += str(pars.Tg) + "\n"
     cin += "# Molecular hydrogen density, nH_2, cm^-3\n"
     cin += str(pars.nH) + '\n'
+    cin += "# Number of molecular species\n"
+    cin += str(1) + '\n'
     cin += "# Specific column density, cm^-3 s\n"
     cin += str(pars.N_dV) + '\n'
     cin += "# Molecular abundance (wrt H2)\n"
@@ -268,8 +270,8 @@ def compute_model(pars):
             line = line.split()
             if len(line) == 0:
                 exit("I didn't find all transitions given in LIST_OF_TRANSITIONS")
-            if int(line[0]) == LIST_OF_TRANSITIONS[iline]:
-                res += " " + line[3] + " " + line[4] + " " + line[5]
+            if int(line[0]) == LIST_OF_TRANSITIONS[iline][0] and int(line[1]) == LIST_OF_TRANSITIONS[iline][1]:
+                res += " " + line[4] + " " + line[5] + " " + line[6]
                 iline = iline + 1
         fin.close()
         return in_pars + res + out_errs
