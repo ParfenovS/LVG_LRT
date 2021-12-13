@@ -217,7 +217,7 @@ void dgesl ( real_type a[], const size_t & lda, const size_t & n, size_t ipvt[],
 //****************************************************************************80
 
 template <typename real_type>
-int dsvdc ( real_type a[], const size_t & lda, const size_t & n, real_type s[], real_type e[], real_type work[])
+size_t dsvdc ( real_type a[], const size_t & lda, const size_t & n, real_type s[], real_type e[], real_type work[])
 
 //****************************************************************************80
 //
@@ -297,7 +297,7 @@ int dsvdc ( real_type a[], const size_t & lda, const size_t & n, real_type s[], 
   real_type f;
   real_type g;
   size_t l = 0;
-  int info;
+  size_t info;
   size_t iter;
   size_t ls = 0;
   size_t k;
