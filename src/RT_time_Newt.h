@@ -51,7 +51,7 @@ private:
 		vector <double> atime;
 		vector <vector <double> > data;
 		vector <size_t> ntrans;
-		size_t nspecies;
+		size_t nspecies = 1;
 
 		ifstream rfile;
 		rfile.open(filename, ios::binary | ios::in);
