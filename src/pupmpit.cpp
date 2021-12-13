@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 		num_of_cycles = readline<size_t>(fin);
 
 		getline(fin, str);
-		close_levels = readline<size_t>(fin);
+		close_levels = readline<int>(fin);
 
 		fin.close();
 	}
