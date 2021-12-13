@@ -65,7 +65,9 @@ inline void daxpy ( const size_t & n, real_type da, real_type dx[], real_type dy
     return;
   }
 
-  #if defined(__GNUG__) && !defined(__clang__)
+  #if defined (_MSC_VER)
+  #pragma loop( ivdep )
+  #elif defined(__GNUG__) && !defined(__clang__)
   #pragma GCC ivdep
   #else 
   #pragma ivdep
@@ -128,7 +130,9 @@ inline void dscal ( const size_t & n, real_type sa, real_type x[] )
 {
   size_t i;
 
-  #if defined(__GNUG__) && !defined(__clang__)
+  #if defined (_MSC_VER)
+  #pragma loop( ivdep )
+  #elif defined(__GNUG__) && !defined(__clang__)
   #pragma GCC ivdep
   #else 
   #pragma ivdep
