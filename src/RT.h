@@ -357,7 +357,8 @@ protected:
 				}
 				if (mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 			}
-			/*vector<size_t> more_levels_to_relax;
+			/*
+			vector<size_t> more_levels_to_relax;
 			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 				for (size_t j = 0; j < levels_to_relax.size(); j++) {
 					if (mol->rad_trans[i].up_level == levels_to_relax[j]) more_levels_to_relax.push_back(mol->rad_trans[i].low_level);
@@ -365,7 +366,8 @@ protected:
 				}
 			}
 			copy(more_levels_to_relax.begin(),more_levels_to_relax.end(),std::back_inserter(levels_to_relax));
-			more_levels_to_relax.clear();*/
+			more_levels_to_relax.clear();
+			*/
 			const double var_under_relax_fac = 1.0 / (ceil(fabs(minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
