@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <numeric>
 #include "physconsts.h"
 
 using namespace std;
@@ -42,4 +43,19 @@ inline string trim(string & str)    // remove left and right spaces in a string
     str.erase(0, str.find_first_not_of(' '));       // prefixing spaces
     str.erase(str.find_last_not_of(' ') + 1);       // surfixing spaces
     return str;
+}
+
+
+// see https://gist.github.com/HViktorTsoi/58eabb4f7c5a303ced400bcfa816f6f5
+template<typename T>
+std::vector<size_t> argsort(const std::vector<T> &array) {
+    std::vector<size_t> indices(array.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(),
+              [&array](int left, int right) -> bool {
+                  // sort indices according to corresponding array element
+                  return array[left] > array[right];
+              });
+
+    return indices;
 }
