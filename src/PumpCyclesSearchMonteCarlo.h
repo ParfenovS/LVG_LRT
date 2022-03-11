@@ -127,6 +127,7 @@ private:
 			if (lm1 == k_lev && A <= 0.0) cout << "A<=0 for the final level; maybe one need to consider another final level\n";
 			if (steps == MAX_STEPS)	cerr << " Maximum number of steps in pop_flow() has been reached\n";
 			if (steps != MAX_STEPS && lm == k_lev) {
+				cycle.lms.push_back(k_lev);
 				if (cycles.size() == 0) {
 					cycles.push_back(cycle);
 					continue;
@@ -152,16 +153,27 @@ private:
 			}
 		}
 
+		// calculate the relative efficiency of the cycle
+		vector <double> fR1(cycles.size());
 		for (size_t c = 0; c < cycles.size(); c++)
 		{
-			double fR1 = 1;
+			fR1[c] = 1;
 			for (size_t m = 1; m < cycles[c].lms.size(); m++)
 			{
-				fR1 *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]] / 2.;
+				fR1[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]] / 2.;
 			}
-			fR1 *= T[k_lev][i_lev];
-			if (fabs(fR1) < 1.e-30) continue;
-			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fR1 << "\n";
+			fR1[c] *= T[k_lev][i_lev];
+		}
+
+		// sorting by efficiency
+		vector <size_t> sort_indexes = argsort(fR1);
+
+		// output results
+		for (size_t ic = 0; ic < cycles.size(); ic++)
+		{
+			size_t c = sort_indexes[ic];
+			if (fabs(fR1[c]) < 1.e-30) continue;
+			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fR1[c] << "\n";
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
