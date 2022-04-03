@@ -25,16 +25,16 @@ SPECIFIC_COLUMN_DENSITIES = numpy.power(10., numpy.arange(12.5, 14.75, 0.25))
 COLLISION_PARTNERS_FRACTIONS = [0.8, 0.2]  # partners for CH3OH: H2 , He
 #### ***************
 INITIAL_SOLUTION = 0 # 0 - from file; 1 - optically thin; 2 - LTE
-#INITIAL_SOLUTION_FILENAME = "Populations/Pn_A.txt"
-INITIAL_SOLUTION_FILENAME = "Populations/Pn_E.txt"
-#FILE_WITH_LAMDA_DATA = "rabli_a.dat"
-FILE_WITH_LAMDA_DATA = "rabli_e.dat"
+INITIAL_SOLUTION_FILENAME = ["Populations/Pn_A.txt", "Populations/Pn_E.txt"]
+FILE_WITH_LAMDA_DATA = ["rabli_a.dat", "rabli_e.dat"]
 MAXIMUM_DpopDt_OR_popDiff = 1.e-4
 MAXIMUM_NUMBER_OF_ITERATIONS = 50000
 BEAMING = [1.0, 10.0]
 LINE_WIDTH = 2.0
-#LIST_OF_TRANSITIONS = [[1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860]] # A-methanol transitions
-LIST_OF_TRANSITIONS = [[1, 399], [1, 11883], [1, 10204], [1, 12446], [1, 11699], [1, 10211], [1, 2850], [1, 314], [1, 1489], [1, 3523], [1, 5690], [1, 11699], [1, 8933]] # E-methanol transitions
+LIST_OF_TRANSITIONS = [
+    [1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860],  # A-methanol transitions
+    [2, 399], [2, 11883], [2, 10204], [2, 12446], [2, 11699], [2, 10211], [2, 2850], [2, 314], [2, 1489], [2, 3523], [2, 5690], [2, 11699], [2, 8933] # E-methanol transitions
+]
 #### Dust parameters, dust emission is computed as:
 #### J = DUST_DILLUTION_FACTORS * (1 - exp(DUST_OPTICAL_DEPTHS_AT_FREQS0 * (nu/DUST_FREQS0)^DUST_P)) * planck_function(DUST_TEMPERATURES,nu)
 DUST_TEMPERATURES = [220] #[K]
@@ -78,7 +78,7 @@ ELECTRON_TEMPERATURES = numpy.array(ELECTRON_TEMPERATURES)
 HII_DILLUTION_FACTORS = numpy.array(HII_DILLUTION_FACTORS)
 TURNOVER_FREQS = numpy.array(TURNOVER_FREQS)
 
-def get_transition_frequencies(filename):
+def get_transition_frequencies(filename, input_list_of_transitions):
     ''' finds transition frequencies given their ids '''
     fin = open(filename, 'r')
     for i in range(0, 6):
@@ -94,8 +94,8 @@ def get_transition_frequencies(filename):
     for i in range(0, number_of_rad_transitions):
         line = fin.readline().split()
         trans_id = int(line[0])
-        for j in LIST_OF_TRANSITIONS:
-            if j[1] == trans_id:
+        for j in input_list_of_transitions:
+            if j == trans_id:
                 TRANSITIONS_FREQS.append(float(line[4]))
     fin.close()
     if len(TRANSITIONS_FREQS) < NUMBER_OF_SPECTRAL_LINES:
@@ -122,38 +122,44 @@ class input_parameters:
         self.prevBeam = prev_beam
         self.prevNdV = prev_NdV
         self.prevnH = prev_nH
-        self.init_sol_file = ""
-        self.final_sol_file = ""
+        self.init_sol_file = []
+        self.final_sol_file = []
+        for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+            self.init_sol_file.append("")
+            self.final_sol_file.append("")
         if UTILIZE_PREVIOUS_SOLUTIONS:
-            if self.__allowed_to_write_pops_file():
-                self.final_sol_file = INITIAL_SOLUTION_FILENAME + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
-            if prev_nH is None and prev_NdV is None and prev_beam is None and INITIAL_SOLUTION == 0:
-                self.init_sol_file = INITIAL_SOLUTION_FILENAME
-            else:
-                used_nH = nH ; used_NdV = N_dV ; used_beam = beamH
-                if not(prev_nH is None and prev_NdV is None and prev_beam is None):
-                    if prev_nH is not None:
-                        used_nH = prev_nH
-                    if prev_NdV is not None:
-                        used_NdV = prev_NdV
-                        used_nH = nH
-                    if prev_beam is not None:
-                        used_beam = prev_beam
-                        used_NdV = N_dV
-                        used_nH = nH
-                    self.init_sol_file = INITIAL_SOLUTION_FILENAME + str(used_NdV) + "_" + str(used_nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(used_beam)
+            for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+                if self.__allowed_to_write_pops_file():
+                    self.final_sol_file[ispec] = INITIAL_SOLUTION_FILENAME[ispec] + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
+                if prev_nH is None and prev_NdV is None and prev_beam is None and INITIAL_SOLUTION == 0:
+                    self.init_sol_file[ispec] = INITIAL_SOLUTION_FILENAME[ispec]
+                else:
+                    used_nH = nH ; used_NdV = N_dV ; used_beam = beamH
+                    if not(prev_nH is None and prev_NdV is None and prev_beam is None):
+                        if prev_nH is not None:
+                            used_nH = prev_nH
+                        if prev_NdV is not None:
+                            used_NdV = prev_NdV
+                            used_nH = nH
+                        if prev_beam is not None:
+                            used_beam = prev_beam
+                            used_NdV = N_dV
+                            used_nH = nH
+                        self.init_sol_file[ispec] = INITIAL_SOLUTION_FILENAME[ispec] + str(used_NdV) + "_" + str(used_nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(used_beam)
         else:
             if INITIAL_SOLUTION == 0:
-                self.init_sol_file = INITIAL_SOLUTION_FILENAME
-        if self.init_sol_file != "":
-            if not os.path.isfile(self.init_sol_file):
-                print("can't find the input file with initial solution from previous calculations: " + self.init_sol_file + " my pars: " + \
-                    INITIAL_SOLUTION_FILENAME + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
-                )
-                if INITIAL_SOLUTION == 0:
-                    self.init_sol_file = INITIAL_SOLUTION_FILENAME
-                else:
-                    self.init_sol_file = ""
+                for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+                    self.init_sol_file[ispec] = INITIAL_SOLUTION_FILENAME[ispec]
+        for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+            if self.init_sol_file[ispec] != "":
+                if not os.path.isfile(self.init_sol_file[ispec]):
+                    print("can't find the input file with initial solution from previous calculations: " + self.init_sol_file[ispec] + " my pars: " + \
+                        INITIAL_SOLUTION_FILENAME[ispec] + str(N_dV) + "_" + str(nH) + "_" + str(Tg) + "_" + str(Td) + "_" + str(beamH)
+                    )
+                    if INITIAL_SOLUTION == 0:
+                        self.init_sol_file[ispec] = INITIAL_SOLUTION_FILENAME[ispec]
+                    else:
+                        self.init_sol_file[ispec] = ""
 
     def __allowed_to_write_pops_file(self):
         ''' checks if the given model will produce the file with populations that will be used by other models '''
@@ -170,7 +176,7 @@ class input_parameters:
             return False
 
 
-def prepare_input(pars, in_pops_file="", out_pops_file=""):
+def prepare_input(pars, in_pops_file=None, out_pops_file=None):
     ''' prepares input for a give model parameteres set '''
     ortho_para = numpy.min( [3.0, 9.0 * numpy.exp(-170.6 / pars.Tg)] )
     cin = ""
@@ -179,33 +185,48 @@ def prepare_input(pars, in_pops_file="", out_pops_file=""):
     cin += "# Molecular hydrogen density, nH_2, cm^-3\n"
     cin += str(pars.nH) + '\n'
     cin += "# Number of molecular species\n"
-    cin += str(1) + '\n'
+    cin += str(len(FILE_WITH_LAMDA_DATA)) + '\n'
     cin += "# Specific column density, cm^-3 s\n"
-    cin += str(pars.N_dV) + '\n'
+    for _ in range(len(FILE_WITH_LAMDA_DATA)):
+        cin += str(pars.N_dV) + '\n'
     cin += "# Molecular abundance (wrt H2)\n"
-    cin += str(1.e-7) + '\n'
+    for _ in range(len(FILE_WITH_LAMDA_DATA)):
+        cin += str(1.e-7) + '\n'
     cin += "# Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile:\n"
     '''for icoll in range(0, len(COLLISION_PARTNERS_FRACTIONS)):
         cin += str(COLLISION_PARTNERS_FRACTIONS[icoll]) + "\n"
     '''
-    cin += str(COLLISION_PARTNERS_FRACTIONS[0] / (1.+ortho_para)) + "\n"
-    cin += str(COLLISION_PARTNERS_FRACTIONS[0] - COLLISION_PARTNERS_FRACTIONS[0] / (1.+ortho_para)) + "\n"
-    cin += str(COLLISION_PARTNERS_FRACTIONS[1]) + "\n"
+    for _ in range(len(FILE_WITH_LAMDA_DATA)):
+        cin += str(COLLISION_PARTNERS_FRACTIONS[0] / (1.+ortho_para)) + "\n"
+        cin += str(COLLISION_PARTNERS_FRACTIONS[0] - COLLISION_PARTNERS_FRACTIONS[0] / (1.+ortho_para)) + "\n"
+        cin += str(COLLISION_PARTNERS_FRACTIONS[1]) + "\n"
     cin += "\n"
 
 
     cin += "# Initial solution:\n"
     cin += "# 0 - from file; 1 - optically thin; 2 - LTE\n"
-    if UTILIZE_PREVIOUS_SOLUTIONS and in_pops_file != "":
+    input_pops_file_is_present = in_pops_file is not None
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        input_pops_file_is_present = input_pops_file_is_present and in_pops_file[ispec] != ""
+    if UTILIZE_PREVIOUS_SOLUTIONS and input_pops_file_is_present:
         cin += "0" + "\n"
     else:
         cin += str(INITIAL_SOLUTION) + "\n"
     cin += "# Name of file with initial solution (can be empty):\n"
-    cin += in_pops_file + "\n"
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        if in_pops_file[ispec] is not None:
+            cin += in_pops_file[ispec] + "\n"
+        else:
+            cin += "\n"
     cin += "# Name of file with final solution (can be empty):\n"
-    cin += out_pops_file + "\n"
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        if out_pops_file[ispec] is not None:
+            cin += out_pops_file[ispec] + "\n"
+        else:
+            cin += "\n"
     cin += "# Name of LAMDA file with with molecular data:\n"
-    cin += FILE_WITH_LAMDA_DATA + "\n"
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        cin += FILE_WITH_LAMDA_DATA[ispec] + "\n"
     cin += "# Stopping criteria:\n"
     cin += "# maximum length of Dn/Dt vector where		| maximum number of\n"
     cin += "# Dn/Dt - time derivative of populations    | iterations\n"
@@ -236,7 +257,7 @@ def prepare_input(pars, in_pops_file="", out_pops_file=""):
 
 def compute_model(pars):
     ''' computes a single LVG model with a given parameters set '''
-    input_pops_file = pars.init_sol_file
+    input_pops_file = copy.deepcopy(pars.init_sol_file)
     if SLOWLY_INCREASE_BEAMING and pars.beamH > 1 and pars.prevNdV is None:
         max_beaming = int(pars.beamH)
         first_beaming = 1
@@ -244,19 +265,24 @@ def compute_model(pars):
             first_beaming = pars.prevBeam
         temp_beams = numpy.arange(first_beaming, max_beaming, 1)
         temp_pars = copy.deepcopy(pars)
+        output_files = copy.deepcopy(pars.init_sol_file)
+        for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+            output_files[ispec] += temp_pars.ident
         for temp_beam in temp_beams:
             temp_pars.beamH = temp_beam
-            cin = prepare_input(temp_pars, input_pops_file, pars.init_sol_file + temp_pars.ident)
+            cin = prepare_input(temp_pars, input_pops_file, output_files)
             p = Popen(['./LVG_LRT.exe', '1'], stdout=PIPE, stdin=PIPE, stderr=PIPE, universal_newlines=True)
             out, err = p.communicate(input=cin)
-            input_pops_file = pars.init_sol_file + temp_pars.ident
+            for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+                input_pops_file[ispec] = pars.init_sol_file[ispec] + temp_pars.ident
 
     cin = prepare_input(pars, input_pops_file, pars.final_sol_file)
     p = Popen(['./LVG_LRT.exe', '1'], stdout=PIPE, stdin=PIPE, stderr=PIPE, universal_newlines=True)
     out, err = p.communicate(input=cin)
 
     if SLOWLY_INCREASE_BEAMING and pars.beamH > 1 and pars.prevNdV is None:
-        os.remove(input_pops_file)
+        for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+            os.remove(input_pops_file[ispec])
 
     in_pars = numpy.array([pars.nH, pars.Tg, pars.N_dV, pars.Td, pars.Wd, pars.tauDust, pars.freqDust, \
                            pars.pDust, pars.Te, pars.Whii, pars.turnFreq, pars.beamH])
@@ -436,15 +462,20 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
 if __name__ == "__main__":
     if not os.path.isfile("LVG_LRT.exe"):
         exit("can't find LVG_LRT.exe program")
-    if not os.path.isfile(FILE_WITH_LAMDA_DATA):
-        exit("can't find LAMDA input file")
-    if INITIAL_SOLUTION == 0 and not UTILIZE_PREVIOUS_SOLUTIONS:
-        if not os.path.isfile(INITIAL_SOLUTION_FILENAME):
-            exit("can't find the input file with initial solution")
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        if not os.path.isfile(FILE_WITH_LAMDA_DATA[ispec]):
+            exit("can't find LAMDA input file: " + FILE_WITH_LAMDA_DATA[ispec])
+        if INITIAL_SOLUTION == 0 and not UTILIZE_PREVIOUS_SOLUTIONS:
+            if not os.path.isfile(INITIAL_SOLUTION_FILENAME[ispec]):
+                exit("can't find the input file with initial solution:" + INITIAL_SOLUTION_FILENAME[ispec])
     start_time = time.time()
-    get_transition_frequencies(FILE_WITH_LAMDA_DATA)
+    for ispec in range(len(FILE_WITH_LAMDA_DATA)):
+        freqs = [x[1] for x in LIST_OF_TRANSITIONS if x[0] == ispec + 1]
+        get_transition_frequencies(FILE_WITH_LAMDA_DATA[ispec], freqs)
+    if len(TRANSITIONS_FREQS) < NUMBER_OF_SPECTRAL_LINES:
+        exit("I didn't find all transitions from LIST_OF_TRANSITIONS in the given LAMDA file\n")
     if UTILIZE_PREVIOUS_SOLUTIONS:
-        make_grid_saving_populations(RESULTED_GRID_FILENAME)
+        make_grid_using_previous_solutions(RESULTED_GRID_FILENAME)
     else:
         make_grid(RESULTED_GRID_FILENAME)
     print("elapsed time = " + str(time.time() - start_time))
