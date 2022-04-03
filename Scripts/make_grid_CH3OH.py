@@ -33,7 +33,7 @@ BEAMING = [1.0, 10.0]
 LINE_WIDTH = 2.0
 LIST_OF_TRANSITIONS = [
     [1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860],  # A-methanol transitions
-    [2, 399], [2, 11883], [2, 10204], [2, 12446], [2, 11699], [2, 10211], [2, 2850], [2, 314], [2, 1489], [2, 3523], [2, 5690], [2, 11699], [2, 8933] # E-methanol transitions
+    [2, 399], [2, 11883], [2, 10204], [2, 12446], [2, 10211], [2, 2850], [2, 314], [2, 1489], [2, 3523], [2, 5690], [2, 11699], [2, 8933] # E-methanol transitions
 ]
 #### Dust parameters, dust emission is computed as:
 #### J = DUST_DILLUTION_FACTORS * (1 - exp(DUST_OPTICAL_DEPTHS_AT_FREQS0 * (nu/DUST_FREQS0)^DUST_P)) * planck_function(DUST_TEMPERATURES,nu)
@@ -98,8 +98,6 @@ def get_transition_frequencies(filename, input_list_of_transitions):
             if j == trans_id:
                 TRANSITIONS_FREQS.append(float(line[4]))
     fin.close()
-    if len(TRANSITIONS_FREQS) < NUMBER_OF_SPECTRAL_LINES:
-        exit("I didn't find all transitions from LIST_OF_TRANSITIONS in the given LAMDA file\n")
 
 class input_parameters:
     ''' contains the set of parameters for a given model '''
