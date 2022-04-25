@@ -8,17 +8,15 @@ private:
 	vector<double> nu_from_file; // array of frequencies from the file with external radiation
 	vector<double> J_from_file; // array of occupation numbers from the file with external radiation
 
-	vector<double> time_from_file_small; // array of time points from file with dependence of dust temperature on time
-	vector<double> Td_from_file_small; // array of dust temperatures from file with dependence of dust temperature on time
-	vector<double> time_from_file_large; // array of time points from file with dependence of dust temperature on time
-	vector<double> Td_from_file_large; // array of dust temperatures from file with dependence of dust temperature on time
+	vector<double> time_from_file; // array of time points from file with dependence of dust temperature and dillution factor on time
+	vector<double> Td_from_file; // array of dust temperatures from file with dependence of dust temperature and dillution factor on time
+	vector<double> Wd_from_file; // array of dust dillution factors from file with dependence of dust temperature and dillution factor on time
 
 	// Dust emission is given by modified black body emission multiplied by Wd; the mean intensity J = Wd * tau0 * (nu/nu0)^p * planck_function(Td,nu) (see e.g. Sobolev et al. 1997, van der Walt 2014)
 	double tau_nu0;				// optical depth at frequency=nu0 from the modified black body function
 	double nu0;					// [Hz], nu0 from the modified black body function
 	double p;					// spectral index
 	double Wd;					// dillution factor for the dust emission
-	double oneMinusWd;			// = 1 - Wd
 	double Td;					// [K], dust temperature
 	unsigned short inner_dust_included;	// = 0 - there will be no dust inside the maser region; = 1 - there will be dust inside the maser region
 	unsigned short outer_dust_at_LOS;	// = 0 - the dust outside the maser region is not on the line of sight; = 1 - the dust outside the maser region is on the line of sight
@@ -74,12 +72,12 @@ private:
 		return 0.0;
 	}
 
-	void read_Td_from_file(const string & filename) 	//read mean intensity of external emission from a file
+	void read_TdWd_from_file(const string & filename) 	//read mean intensity of external emission from a file
 	{
 		ifstream fin;
 		istringstream sfin;
 		string str;
-		double input_time, input_Td;
+		double input_time, input_Td, input_Wd;
 
 		fin.open(filename.c_str(), ios::in);
 		if ( !fin.good() ) { 	// check if we found the file
@@ -91,23 +89,24 @@ private:
 			str = trim(str); 	// trim is taken from auxiliary.h
 			if (str.size() != 0) {
 				sfin.str(str);
-				sfin >> input_time >> input_Td;
+				sfin >> input_time >> input_Td >> input_Wd;
 				sfin.clear();
-				time_from_file_small.push_back( input_time + 30*3600 );
-				Td_from_file_small.push_back( input_Td ); 
+				time_from_file.push_back( input_time );
+				Td_from_file.push_back( input_Td );
+				Wd_from_file.push_back( input_Wd );
 			}
 			else break;
 		}
 		fin.close();
 	}
 
-	double interpolate_Td_from_file(const double & time, const vector <double> & time_from_file, const vector <double> & Td_from_file) 	// interpolate dust temperature that has been read from file for a time
+	double interpolate_TdWd_from_file(const double & time, const vector <double> & itime_from_file, const vector <double> & Xd_from_file) 	// interpolate dust temperature that has been read from file for a time
 	{
-		if (time < time_from_file[0]) return Td_from_file[0];
-		if (time > time_from_file[time_from_file.size()-1]) return Td_from_file[time_from_file.size()-1];
-		for (size_t i = 0; i < time_from_file.size()-1; i++ ) {
-			if (time_from_file[i] <= time && time <= time_from_file[i+1])
-				return Td_from_file[i] + (Td_from_file[i+1] - Td_from_file[i]) / (time_from_file[i+1] - time_from_file[i]) * (time - time_from_file[i]);  
+		if (time < itime_from_file[0]) return Xd_from_file[0];
+		if (time > itime_from_file[itime_from_file.size()-1]) return Xd_from_file[itime_from_file.size()-1];
+		for (size_t i = 0; i < itime_from_file.size()-1; i++ ) {
+			if (itime_from_file[i] <= time && time <= itime_from_file[i+1])
+				return Xd_from_file[i] + (Xd_from_file[i+1] - Xd_from_file[i]) / (itime_from_file[i+1] - itime_from_file[i]) * (time - itime_from_file[i]);
 		}
 		return 0.0;
 	}
@@ -154,18 +153,19 @@ private:
 	double var_Td(const double & time) // dependence of dust temperature on time
 	{
 		return Td;
-		//return var_Td(time, time_from_file_small, Td_from_file_small);
+		/*return interpolate_TdWd_from_file(time, time_from_file, Td_from_file);
+		const double period = 3*3600.;
+		if (time > 3 * period) return Td;
+		return Td + 3 * sin(2 * PI * time / period);*/
 	}
 
-	double var_Td(const double & time, const double & freq) // dependence of dust temperature on time
+	double var_Wd(const double & time) // dependence of dust dillution factor on time
 	{
-		double time_nu = time * pow((6.52e13) / freq, p * 0.5);
-		return var_Td(time_nu, time_from_file_small, Td_from_file_small);
-	}
-
-	double var_Td(const double & time, const vector <double> & time_from_file, const vector <double> & Td_from_file) // dependence of dust temperature on time
-	{
-		return interpolate_Td_from_file(time, time_from_file, Td_from_file);	
+		return Wd;
+		/*return interpolate_TdWd_from_file(time, time_from_file, Wd_from_file);
+		const double period = 3*3600.;
+		if (time > 3 * period) return Wd;
+		return Wd + 0.1 * sin(2 * PI * time / period);*/
 	}
 
 public:
@@ -197,7 +197,6 @@ public:
 	double outer_dust_source_function(const double & freq, const double & time) 	// source function for the external dust emission
 	{
 		return planck_function(var_Td(time), freq);
-		//return planck_function(var_Td(time, freq), freq);
 	}
 
 	double inner_dust_source_function(const double & freq) 	// source function for the dust emission inside the maser region
@@ -215,7 +214,7 @@ public:
 		if (read_Jext_from_file == 0) {
 			const double J_dust = Wd *  oneMinusExp(tau_dust(freq))  * outer_dust_source_function(freq); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
-			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + oneMinusWd * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
+			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1 - Wd) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
 
 			return J_dust + J_CMB;
 		} else {
@@ -228,9 +227,9 @@ public:
 	double compute_Jext_dust_CMB_file(const double & freq, const double & time)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
 	{
 		if (read_Jext_from_file == 0) {
-			const double J_dust = Wd * oneMinusExp(tau_dust(freq)) * outer_dust_source_function(freq, time); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
+			const double J_dust = var_Wd(time) * oneMinusExp(tau_dust(freq)) * outer_dust_source_function(freq, time); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
-			const double J_CMB = Wd * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + oneMinusWd * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
+			const double J_CMB = var_Wd(time) * exp(-tau_dust(freq)) * planck_function(T_CMB,freq) + (1 - var_Wd(time)) * planck_function(T_CMB,freq); // cosmic microwave background emission taking into account an absorption by the external dust layer
 
 			return J_dust + J_CMB;
 		} else {
@@ -269,7 +268,6 @@ public:
 		HII_turn_freq = 1.e8;
 		Td = T_CMB;
 		Wd = 0;
-		oneMinusWd = 1;
 		p = 2.0;
 		nu0 = 300.e9;
 		tau_nu0 = 1.0;
@@ -279,23 +277,20 @@ public:
 		HII_region_at_LOS = 1;
 		outer_dust_at_LOS = 1;
 		read_parameters(fin);
-		oneMinusWd = 1 - Wd;
 		if (Wd > 0.99999) {
-			oneMinusWd = 0.0e00;
 			Wd = 1.0e00;
 		}
 		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
 		if (WHii <= 100. * DBL_EPSILON || HII_region_at_LOS == 0) HII_region_included = 0;
-		//read_Td_from_file("Td.txt");
+		//read_TdWd_from_file("TdWd.txt");
 	}
 
 	~dust_HII_CMB_Jext_radiation()
 	{
 		nu_from_file.clear();
 		J_from_file.clear();
-		time_from_file_small.clear();
-		Td_from_file_small.clear();
-		time_from_file_large.clear();
-		Td_from_file_large.clear();
+		time_from_file.clear();
+		Td_from_file.clear();
+		Wd_from_file.clear();
 	}
 };
