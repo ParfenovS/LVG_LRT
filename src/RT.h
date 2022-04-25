@@ -348,37 +348,25 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			vector<size_t> levels_to_relax;
+			vector<bool> underrelax_level(mol->levels.size(), false);
 			double minimum_tau = 0.0;
 			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 				if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
-					levels_to_relax.push_back(mol->rad_trans[i].up_level);
-					levels_to_relax.push_back(mol->rad_trans[i].low_level);
+					underrelax_level[mol->rad_trans[i].up_level] = true;
+					underrelax_level[mol->rad_trans[i].low_level] = true;
 				}
 				if (mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 			}
-			/*
-			vector<size_t> more_levels_to_relax;
+			/* more levels to underralax
 			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-				for (size_t j = 0; j < levels_to_relax.size(); j++) {
-					if (mol->rad_trans[i].up_level == levels_to_relax[j]) more_levels_to_relax.push_back(mol->rad_trans[i].low_level);
-					if (mol->rad_trans[i].low_level == levels_to_relax[j]) more_levels_to_relax.push_back(mol->rad_trans[i].up_level);
-				}
+				if (underrelax_level[mol->rad_trans[i].up_level]) underrelax_level[mol->rad_trans[i].low_level] = true;
+				if (underrelax_level[mol->rad_trans[i].low_level]) underrelax_level[mol->rad_trans[i].up_level] = true;
 			}
-			copy(more_levels_to_relax.begin(),more_levels_to_relax.end(),std::back_inserter(levels_to_relax));
-			more_levels_to_relax.clear();
 			*/
 			const double var_under_relax_fac = 1.0 / (ceil(fabs(minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				bool lev_need_to_be_relaxed = false;
-				for (size_t j = 0; j < levels_to_relax.size(); j++) {
-					if (i == levels_to_relax[j]) {
-						lev_need_to_be_relaxed = true;
-						break;
-					}
-				}
-				if (lev_need_to_be_relaxed) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
+				if (underrelax_level[i]) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
 				else mol->levels[i].pop = max(pop[i], MIN_POP);
 				pops_sum += mol->levels[i].pop;
 			}
@@ -392,7 +380,6 @@ protected:
 				}
 			}
 			pop_norm = sqrt(pop_norm);
-			levels_to_relax.clear();
 		}
 		return there_were_bad_levels;
 	}
