@@ -16,8 +16,9 @@ private:
 	double tau_nu0;				// optical depth at frequency=nu0 from the modified black body function
 	double nu0;					// [Hz], nu0 from the modified black body function
 	double p;					// spectral index
+	double Td_in;				// [K], temperature of dust within the maser region
+	double Td;					// [K], external dust temperature
 	double Wd;					// dillution factor for the dust emission
-	double Td;					// [K], dust temperature
 	unsigned short inner_dust_included;	// = 0 - there will be no dust inside the maser region; = 1 - there will be dust inside the maser region
 	unsigned short outer_dust_at_LOS;	// = 0 - the dust outside the maser region is not on the line of sight; = 1 - the dust outside the maser region is on the line of sight
 	
@@ -143,6 +144,7 @@ private:
 
 		getline(fin, str);
 		T_CMB = readline<double>(fin);
+		Td_in = Td;
 	}
 
 	double tau_HII(const double freq) 	// optical depth of the HII region at a given frequency
@@ -150,7 +152,7 @@ private:
 		return ( HII_turn_freq / freq) * ( HII_turn_freq / freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
 	}
 
-	double var_Td(const double & time) // dependence of dust temperature on time
+	double var_Td(const double & time) // dependence of external dust temperature on time
 	{
 		return Td;
 		/*return interpolate_TdWd_from_file(time, time_from_file, Td_from_file);
@@ -166,6 +168,11 @@ private:
 		const double period = 3*3600.;
 		if (time > 3 * period) return Wd;
 		return Wd + 0.1 * sin(2 * PI * time / period);*/
+	}
+
+	double var_Td_in(const double & time) // dependence of external dust temperature on time
+	{
+		return Td_in;
 	}
 
 public:
@@ -201,12 +208,12 @@ public:
 
 	double inner_dust_source_function(const double & freq) 	// source function for the dust emission inside the maser region
 	{
-		return inner_dust_included * planck_function(Td, freq);
+		return inner_dust_included * planck_function(Td_in, freq);
 	}
 
 	double inner_dust_source_function(const double & freq, const double & time) 	// source function for the dust emission inside the maser region
 	{
-		return inner_dust_included * planck_function(var_Td(time), freq);
+		return inner_dust_included * planck_function(var_Td_in(time), freq);
 	}
 	
 	double compute_Jext_dust_CMB_file(const double & freq)		// returns mean intensity taken from file or sum of dust and cosmic microwave background (CMB) mean intensities
@@ -247,16 +254,18 @@ public:
 			return 0.0;
 	}
 
-	double continuum(const double & freq) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
+	double continuum_behind_maser_region(const double & freq) 	// computes continuum behind the maser region
 	{
-		return outer_dust_source_function(freq) * oneMinusExp(tau_dust_LOS(freq)) + 
-			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);
+		const double THII = exp(- HII_region_included * tau_HII(freq)) * planck_function(T_CMB,freq) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
+		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
+		return Td1;
 	}
 
-	double continuum(const double & freq, const double & time) 	// computes continuum part in the equation for Tb which is similar to the one given in Appendix A of Sobolev et al. 1997
+	double continuum_behind_maser_region(const double & freq, const double & time) 	// computes continuum behind the maser region
 	{
-		return outer_dust_source_function(freq, time) * oneMinusExp(tau_dust_LOS(freq)) + 
-			   planck_function(T_CMB,freq) * exp(-tau_dust_LOS(freq)) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);
+		const double THII = exp(- HII_region_included * tau_HII(freq)) * planck_function(T_CMB,freq) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
+		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq, time); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
+		return Td1;
 	}
 
 	template <typename T>
@@ -267,6 +276,7 @@ public:
 		WHii = 0;
 		HII_turn_freq = 1.e8;
 		Td = T_CMB;
+		Td_in = Td;
 		Wd = 0;
 		p = 2.0;
 		nu0 = 300.e9;
