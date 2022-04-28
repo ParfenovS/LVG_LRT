@@ -12,6 +12,7 @@ protected:
 	unsigned long maxNumberOfIterations;						// maximum number of iterations
 	double beamH; 												// beaming factor; this is eps^-1 = D(ln r)/D(ln V) quantity from e.g. Sobolev et al. 1997, Cragg et al. 2005
 	double lineWidth; 											// spectral width of the lines; this will be used to determine blended lines
+	double invlineWidth;										// = 1 / lineWidth
 	dust_HII_CMB_Jext_radiation *dust_HII_CMB_Jext_emission; 	// this object will be used for calculations of external emission
 	bool cerr_output_iter_progress; 							// = true - the current iteration number, maximum relative pop difference and corresponding level number will be printed on the standard cerr pipe
 	string line_profile_shape; 									// ="g" - Gaussian line profile; ="r" - rectangular line profile
@@ -65,6 +66,7 @@ protected:
 		sfin.str(trim(str));
 		sfin >> lineWidth >> line_profile_shape;
 		lineWidth *= 1.e5; // [km/s] -> [cm/s]
+		invlineWidth = 1. / lineWidth;
 	}
 
 	/*
@@ -149,32 +151,43 @@ protected:
 		auto kabsi = [&](const size_t & i, const size_t ispec) { 	//absorption coefficient for i-th transition of ispec molecule without taking into account line overlapping
 			const size_t & up = mols[ispec].rad_trans[i].up_level;
 			const size_t & low = mols[ispec].rad_trans[i].low_level;
-			return mols[ispec].levels[low].pop * mols[ispec].rad_trans[i].Blu - mols[ispec].levels[up].pop * mols[ispec].rad_trans[i].Bul;
+			return modelPhysPars::Hdens * modelPhysPars::abundance[ispec] * (mols[ispec].levels[low].pop * mols[ispec].rad_trans[i].Blu - mols[ispec].levels[up].pop * mols[ispec].rad_trans[i].Bul);
 		};
 
 		double kabs = kabsi(i, mol->idspec);
 		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
 			kabs += kabsi(mol->rad_trans[i].blends[j].id, mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[i].blends[j].fac;
 		}
-		return kabs + mol->rad_trans[i].kabs_dust;
+		return (HC4PI * invlineWidth) * kabs + mol->rad_trans[i].kabs_dust;
 	}
 
 	double emiss_coeff(const size_t & i, molModel *mol) // emission coefficient for i-th transition
 	{
 		auto emissi = [&](const size_t & i, const size_t ispec) { 	// emission coefficient for i-th transition of ispec molecule without taking into account line overlapping
-			return mols[ispec].rad_trans[i].A * mols[ispec].levels[mols[ispec].rad_trans[i].up_level].pop;
+			return modelPhysPars::Hdens * modelPhysPars::abundance[ispec] * mols[ispec].rad_trans[i].A * mols[ispec].levels[mols[ispec].rad_trans[i].up_level].pop;
 		};
 
 		double emiss = emissi(i, mol->idspec);
 		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
 			emiss += emissi(mol->rad_trans[i].blends[j].id, mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[i].blends[j].fac;
 		}
-		return emiss + mol->rad_trans[i].emiss_dust;
+		return (HC4PI * invlineWidth) * emiss + mol->rad_trans[i].emiss_dust;
 	}
 
 	void compute_tau(const size_t & i, molModel *mol)		// optical depth of the maser region for radiative transition i
 	{ // see e.g. Appendix A in Sobolev et al. 1997
-		mol->rad_trans[i].tau = (PLANK_CONSTANT * SPEED_OF_LIGHT / 4. / PI) * modelPhysPars::NdV[mol->idspec] * abs_coeff(i, mol) ;
+		auto tauif = [&](const size_t & i, const size_t ispec) { 	//optical depth for i-th transition of ispec molecule without taking into account line overlapping
+			const size_t & up = mols[ispec].rad_trans[i].up_level;
+			const size_t & low = mols[ispec].rad_trans[i].low_level;
+			return modelPhysPars::NdV[ispec] * (mols[ispec].levels[low].pop * mols[ispec].rad_trans[i].Blu - mols[ispec].levels[up].pop * mols[ispec].rad_trans[i].Bul);
+		};
+
+		mol->rad_trans[i].tau = tauif(i, mol->idspec);
+		for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
+			mol->rad_trans[i].tau += tauif(mol->rad_trans[i].blends[j].id, mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[i].blends[j].fac;
+		}
+		mol->rad_trans[i].tau *= HC4PI;
+		mol->rad_trans[i].tau += mol->rad_trans[i].taud_in;
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
 	}
 	
@@ -191,7 +204,7 @@ protected:
 			beta_S = S * (1.0e00 - beta);
 		} else {
 			S = 0.0;
-			beta_S = 0.5 * emiss * modelPhysPars::NdV[mol->idspec] / (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
+			beta_S = 0.5 * emiss * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::Hdens * modelPhysPars::abundance[mol->idspec]); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
 		}
 
 		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt + 
@@ -235,14 +248,19 @@ protected:
 		return info;
 	}
 
-	void compute_brightness_temperature(const size_t & i, molModel *mol)		// computes brightness temperature and intensity for radiative transition i
-	{ 	// it is similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
+	void compute_brightness_temperature(const size_t & i, molModel *mol)		// computes brightness temperature for radiative transition i
+	{ 	// it is somewhat similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
 		const double & nu = mol->rad_trans[i].nu;
-		mol->rad_trans[i].Tbr = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * (
-			oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i, mol) +
-			(exp(-mol->rad_trans[i].tau*beamH) - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->continuum(nu) -
-			oneMinusExp(mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu)
-		) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
+
+		const double Tcloud_cont = exp(-mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu) +
+									oneMinusExp(mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu); // contribution of the maser cloud into continuum emission
+		const double Tdust_infront_cont = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud_cont; // absorption of continuum by the external dust in front of the maser region at the line-of-sight
+
+		const double Tcloud = exp(-mol->rad_trans[i].tau*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu) +
+									oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i, mol); // contribution of the maser cloud into total emission
+		const double Tdust_infront = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud; // absorption by the external dust in front of the maser region at the line-of-sight
+
+		mol->rad_trans[i].Tbr = (Tdust_infront - Tdust_infront_cont) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
 	void find_blends() 	// searching for overlapped lines, only local overlapping is taken into account
@@ -396,6 +414,7 @@ protected:
 			else this->full_partition_function.push_back(this->input_full_partition_function[0]);
 		}
 		this->lineWidth = 0.0;
+		this->invlineWidth = 1.0;
 		this->maxNumberOfIterations = 1;
 		this->initialSolutionSource = 2;
 		this->MAX_DpopsDt_EPS = 1.e-6;
