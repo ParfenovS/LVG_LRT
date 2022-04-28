@@ -276,7 +276,6 @@ public:
 		WHii = 0;
 		HII_turn_freq = 1.e8;
 		Td = T_CMB;
-		Td_in = Td;
 		Wd = 0;
 		p = 2.0;
 		nu0 = 300.e9;
