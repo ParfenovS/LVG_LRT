@@ -108,22 +108,27 @@ private:
 		}
 	}
 
-	void compute_brightness_temperature(const size_t & i, const double & time, molModel *mol)		// computes brightness temperature and intensity for radiative transition i
-	{ 	// it is similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
+	void compute_brightness_temperature(const size_t & i, const double & time, molModel *mol)		// computes brightness temperature for radiative transition i
+	{ 	// it is somewhat similar to the last Equation for Tbr in Appendix A of Sobolev et al. 1997
 		const double & nu = mol->rad_trans[i].nu;
-		mol->rad_trans[i].Tbr = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * (
-			oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i, mol) +
-			(exp(-mol->rad_trans[i].tau*beamH) - exp(-mol->rad_trans[i].taud_in*beamH)) * dust_HII_CMB_Jext_emission->continuum(nu, time) -
-			oneMinusExp(-mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu, time)
-		) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
+
+		const double Tcloud_cont = exp(-mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu, time) +
+									oneMinusExp(mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu, time); // contribution of the maser cloud into continuum emission
+		const double Tdust_infront_cont = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud_cont; // absorption of continuum by the external dust in front of the maser region at the line-of-sight
+
+		const double Tcloud = exp(-mol->rad_trans[i].tau*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu, time) +
+									oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i, mol); // contribution of the maser cloud into total emission
+		const double Tdust_infront = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud; // absorption by the external dust in front of the maser region at the line-of-sight
+
+		mol->rad_trans[i].Tbr = (Tdust_infront - Tdust_infront_cont) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
 	void update_external_emission(const double & time, molModel *mol)
 	{
-		// set the external emission mean intensity, optical depth, absorption and emission coefficients
+		// set the external emission mean intensity and dust emission coefficient
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 			mol->rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mol->rad_trans[i].nu, time); //external emission from dust, cosmic microwave background or file
-			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu, time); //absorption coefficient of the dust inside the maser region
+			mol->rad_trans[i].emiss_dust = mol->rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mol->rad_trans[i].nu, time); //emission coefficient of the dust inside the maser region
 		}
 	}
 
@@ -222,7 +227,7 @@ public:
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				mols[ispec].rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mols[ispec].rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
 				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth, ispec); //optical depth of the dust inside the maser region
-				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * (4.*PI/SPEED_OF_LIGHT/PLANK_CONSTANT) / modelPhysPars::NdV[ispec]; //absorption coefficient of the dust inside the maser region
+				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens * modelPhysPars::abundance[ispec] / (lineWidth * modelPhysPars::NdV[ispec]); //absorption coefficient of the dust inside the maser region
 				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
 			}
 		}
