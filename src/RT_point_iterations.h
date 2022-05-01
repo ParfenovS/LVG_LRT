@@ -155,7 +155,7 @@ public:
 			speciesWithMaxRPopDiff = 0;
 			MaxRPopDiff = -1.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				update_check_pops(&mols[ispec], pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng[ispec], dummy_pop_norm);
+				update_check_pops(ispec, mols, pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng[ispec], dummy_pop_norm);
 			}
 			if (cerr_output_iter_progress) {
 				cerr << iter << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
