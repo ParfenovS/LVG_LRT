@@ -342,11 +342,13 @@ protected:
 		}
 	}
 
-	bool update_check_pops(molModel *mol, double pop[], size_t & speciesWithMaxRPopDiff, size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
+	bool update_check_pops(const size_t & ispec, vector<molModel> & imols, double pop[], size_t & speciesWithMaxRPopDiff, size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
 		bool there_were_bad_levels = false;
 		pop_norm = 1.e-30;
+
+		molModel *mol = &imols[ispec];
 		for (size_t i = 0; i < mol->levels.size(); i++) {
 			// find maximum relative difference of populations between succesive iterations
 			popRDiff = fabs((pop[i] - mol->levels[i].pop) / mol->levels[i].pop);
@@ -374,6 +376,13 @@ protected:
 					underrelax_level[mol->rad_trans[i].low_level] = true;
 				}
 				if (mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
+				for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
+					if (imols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
+						underrelax_level[mol->rad_trans[i].up_level] = true;
+						underrelax_level[mol->rad_trans[i].low_level] = true;
+						if (imols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau < minimum_tau) minimum_tau = imols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau;
+					}
+				}
 			}
 			/* more levels to underralax
 			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
