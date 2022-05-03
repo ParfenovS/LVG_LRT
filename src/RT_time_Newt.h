@@ -227,7 +227,7 @@ public:
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				mols[ispec].rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mols[ispec].rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
 				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
-				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens / (lineWidth * modelPhysPars::max_NH2dV); //absorption coefficient of the dust inside the maser region
+				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens * invlineWidth / modelPhysPars::max_NH2dV; //absorption coefficient of the dust inside the maser region
 				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
 			}
 		}
