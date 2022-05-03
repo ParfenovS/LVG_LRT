@@ -95,8 +95,8 @@ public:
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				mols[ispec].rad_trans[i].JExt = dust_HII_CMB_Jext_emission->compute_Jext_dust_CMB_file(mols[ispec].rad_trans[i].nu); //external emission from dust, cosmic microwave background or file
 				mols[ispec].rad_trans[i].JExtHII = dust_HII_CMB_Jext_emission->compute_JextHII(mols[ispec].rad_trans[i].nu); //external emission from HII region, should be separated from other types of emission because of maser beaming
-				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth, ispec); //optical depth of the dust inside the maser region
-				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens * modelPhysPars::abundance[ispec] / (lineWidth * modelPhysPars::NdV[ispec]); //absorption coefficient of the dust inside the maser region
+				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
+				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens / (lineWidth * modelPhysPars::max_NH2dV); //absorption coefficient of the dust inside the maser region
 				mols[ispec].rad_trans[i].emiss_dust = mols[ispec].rad_trans[i].kabs_dust * dust_HII_CMB_Jext_emission->inner_dust_source_function(mols[ispec].rad_trans[i].nu); //emission coefficient of the dust inside the maser region
 				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
 			}
