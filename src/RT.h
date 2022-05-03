@@ -66,7 +66,8 @@ protected:
 		sfin.str(trim(str));
 		sfin >> lineWidth >> line_profile_shape;
 		lineWidth *= 1.e5; // [km/s] -> [cm/s]
-		invlineWidth = 1. / lineWidth;
+		invlineWidth = 1.0;
+		if (lineWidth > 0.0) invlineWidth = 1. / lineWidth;
 	}
 
 	/*
