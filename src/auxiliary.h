@@ -21,8 +21,9 @@ inline double planck_function(const double & T, const double & nu)
 template <typename T>
 inline T oneMinusExp(const T & tau) // = 1 - exp(-tau)
 {
-    if (tau < 1.e-5) return tau - tau * tau * 0.5;
-    else return 1 - exp(-tau);
+    //if (tau < 1.e-5) return tau - tau * tau * 0.5;
+    //else return 1 - exp(-tau);
+    return -expm1(-tau);
 }
 
 template <typename T, typename Tfin>
