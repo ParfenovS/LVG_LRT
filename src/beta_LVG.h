@@ -2,6 +2,24 @@
 #include "spline.h"
 #include "hiddenParameters.h"
 #include <functional>
+#include "cubature/cubature.h"
+
+typedef struct {
+	double sig;
+	double tau;
+} fdata_struct;
+
+int integrand_for_cubature(unsigned ndim, const double *x, void * fdata_in, unsigned fdim, double * fval) // function under the integral in equation A1 from Langer & Watson
+{
+	fdata_struct fdata = *(fdata_struct *)fdata_in;
+	const double sig = fdata.sig;
+	const double tau = fdata.tau;
+	//double integ_fac = ( 1. + sig * y *y );
+	const double integ_fac = fma(sig * x[0], x[0], 1.0);
+
+	fval[0] = integ_fac * exp( - tau/integ_fac ); 	// = (1+sigma*y*y) * exp[ -tau/(1+sigma*y*y) ]
+	return 0;
+}
 
 class beta_LVG // class to compute escape probability, beta; see equations from Castor 1970 and Langer & Watson 1984
 {
@@ -12,41 +30,20 @@ private:
 	double oPlusSigDiv3; 	// = (1 + sig / 3)
 	double tau_min; 		// minimum optical depth for which there will be precomputed values of beta in the case of sig != 0
 	double tau_max; 		// maximum optical depth for which there will be precomputed values of beta in the case of sig != 0
-	
-	// the following objects will be used for interpolation of precomputed beta values on tau with splines
-	tk::spline beta_spline_neg; 	// for negative optical depths
-	tk::spline beta_spline_pos; 	// for positive optical depths
-	
+
+	akima_spline spline_neg; // structure for akima spline interpolation of beta for negative taus
+	akima_spline spline_pos; // structure for akima spline interpolation of beta for positive taus
+
 	double integrate_F(const double & tau) 		// the integral in equation A1 from Langer & Watson
 	{
-		unsigned int n;
-		double F, F_old, y, step, sum;
-
-		auto integrand = [&] (const double & y) -> double {
-			//double integ_fac = ( 1. + sig * y *y );
-			double integ_fac = fma(sig * y, y, 1.0);
-			return integ_fac * exp( - tau/integ_fac ); 	// = (1+sigma*y*y) * exp[ -tau/(1+sigma*y*y) ]
-		}; // function under the integral in equation A1 from Langer & Watson
-
-		// the following is an integration with trapezoidal rule with adaptive step
-		sum = ( integrand(0.0) + integrand(1.0) ) * 0.5;
-		F_old = sum;
-		n = 2;
-		do {
-			step = 1.0 / n;
-			for (unsigned int i = 1; i <= n/2; i++) {
-				y = (2. * i - 1.) * step;
-				sum += integrand(y);
-			}
-			F = sum * step;
-
-			if ( fabs(F - F_old) < BETA_ACCURACY * fabs(F_old) ) return F; 	// BETA_ACCURACY is defined in hiddenParameters.h
-
-			n = 2 * n;
-			F_old = F; 
-		} while (true);
-
-		return 0.0;
+		fdata_struct fdata = {sig, tau};
+		const double x_min[1] = {0.};
+        const double x_max[1] = {1.};
+        double integ_res[1];
+        double integ_err[1];
+        int integration_success = 0;
+        integration_success = hcubature(1, integrand_for_cubature, &fdata, 1, x_min, x_max, 100000000, 1.e-60, BETA_ACCURACY, ERROR_INDIVIDUAL, integ_res, integ_err);
+		return integ_res[0];
 	}
 
 	void precalculate_beta() 	// precalculates the values of beta for different values of the optical depth and for a given value of sig;
@@ -68,7 +65,7 @@ private:
 		}
 		tau_interp_array.push_back(0.0e0);
 		log_beta_interp_array.push_back(0.0e0);
-		beta_spline_neg.set_points(tau_interp_array, log_beta_interp_array); 	// creating spline for negative optical depths
+		spline_neg.akima_init(tau_interp_array, log_beta_interp_array); 	// creating spline for negative optical depths
 
 		tau_interp_array.clear();
 		log_beta_interp_array.clear();
@@ -82,7 +79,7 @@ private:
 			log_beta_interp_array.push_back( log( (oPlusSigDiv3 - F) / tau ) ); 	// see equation A2 from Langer & Watson 1984, integral F is computed numerically
 			tau += dtau2;
 		}
-		beta_spline_pos.set_points(tau_interp_array, log_beta_interp_array); 	// creating spline for positive optical depths
+		spline_pos.akima_init(tau_interp_array, log_beta_interp_array); 	// creating spline for positive optical depths
 
 		tau_interp_array.clear();
 		log_beta_interp_array.clear();
@@ -98,8 +95,8 @@ private:
 	double beta_Beam(const double & tau)			// LVG escape probability with beaming, see Appendix A in Langer & Watson 1984, Castor 1970
 	{
 		if (tau > tau_max) return 1. / tau * oPlusSigDiv3; 	// see equation A.6 from Castor 1970	
-		if (tau < 0.0) return exp(beta_spline_neg(tau));
-		else return exp(beta_spline_pos(tau));
+		if (tau < 0.0) return exp(spline_neg.akima_eval(tau));
+		else return exp(spline_pos.akima_eval(tau));
 	}
 
 	double tauDbetaDtau_noBeam(const double & tau)			// = (tau * derivative of beta on tau); without beaming
@@ -112,8 +109,8 @@ private:
 	double tauDbetaDtau_Beam(const double & tau)			// = (tau * derivative of beta on tau); with beaming
 	{
 		if (tau > tau_max) return  - 1. / tau * oPlusSigDiv3; // see equation A.6 from Castor 1970	
-		if (tau < 0.0) return tau * exp(beta_spline_neg(tau)) * beta_spline_neg.deriv(1, tau);
-		else return tau * exp(beta_spline_pos(tau)) * beta_spline_pos.deriv(1, tau);
+		if (tau < 0.0) return tau * exp(spline_neg.akima_eval(tau)) * spline_neg.akima_eval_deriv(tau);
+		else return tau * exp(spline_pos.akima_eval(tau)) * spline_pos.akima_eval_deriv(tau);
 	}
 
 public:
