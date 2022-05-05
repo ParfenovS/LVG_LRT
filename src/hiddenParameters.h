@@ -2,7 +2,7 @@
 
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
-#define BETA_NUM_SPLINE_POINTS 50                      // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
+#define BETA_NUM_SPLINE_POINTS 10000                      // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
 #define MIN_POP_FOR_DIFF_CALC 1.e-14                    // the levels with population below this limit will not be taken into account in calculations of the maximum difference between lev. pops. during local fixed point iterations
 #define MIN_POP 1.e-30                                  // the populations can't be lower than this value
 #define MAX_POP (1.0-1000*DBL_EPSILON)                  // the populations can't be higher than this value
