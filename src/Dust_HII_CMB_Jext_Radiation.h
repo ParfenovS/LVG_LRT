@@ -27,6 +27,7 @@ private:
 	double HII_turn_freq; 		// [Hz], turnover frequency of HII region emission
 	double Te; 					// [K], HII region electron temperature
 	unsigned short HII_region_at_LOS_behind_maser;	// = 0 - HII region does not intersect line-of-sight behind the maser region; = 1 - HII region intersects line-of-sight behind the maser region
+	unsigned short HII_region_at_LOS_infront_maser;	// = 0 - HII region does not intersect line-of-sight in front of the maser region; = 1 - HII region intersects line-of-sight in front of the maser region
 
 	// Cosmic microwave background temperature, Kelvins; J = planck_function(T_CMB,nu)
 	double T_CMB;
@@ -178,7 +179,6 @@ private:
 public:
 
 	unsigned short HII_region_at_LOS;	// = 0 - HII region is not centered on the line of sight; = 1 - HII region is centered on the line of sight
-	unsigned short HII_region_at_LOS_infront_maser;	// = 0 - HII region does not intersect line-of-sight in front of the maser region; = 1 - HII region intersects line-of-sight in front of the maser region
 
 	double tau_HII_infront(const double freq) 	// optical depth of the HII region at a given frequency on line-of-sight in front of the maser region
 	{
