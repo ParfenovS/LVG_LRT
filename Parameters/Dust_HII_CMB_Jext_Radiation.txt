@@ -8,7 +8,7 @@ cloudy_spectrum.dat
 0.0	1.0	1.e13		2.0	220		0
 # HII region emission: J = WHII * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (turnFreq/nu)^2 (see van der Walt 2014 and Appendix A from Sobolev et al. 1997)
 # where WHII - dillution factor, turnFreq - turnover frequency of HII region, Te - electron temperature [K]
-# WHII	turnFreq [Hz]		Te [K]		HII region is at LOS (1) or not (0)
+# WHII	turnFreq [Hz]		Te [K]		HII region is centered on the line-of-sight (1) or not (0)
 1.0	15.689e9		10000.0		1
 # Cosmic microwave background temperature in [K] (can be zero) :
 0.0
