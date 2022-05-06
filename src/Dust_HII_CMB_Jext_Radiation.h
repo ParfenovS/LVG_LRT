@@ -26,7 +26,7 @@ private:
 	double WHii;				//dillution factor for the HII region emission
 	double HII_turn_freq; 		// [Hz], turnover frequency of HII region emission
 	double Te; 					// [K], HII region electron temperature
-	unsigned short HII_region_included;	// = 0 - there will be no background HII region emission; = 1 - there will be the background HII region emission
+	unsigned short HII_region_at_LOS_behind_maser;	// = 0 - HII region does not intersect line-of-sight behind the maser region; = 1 - HII region intersects line-of-sight behind the maser region
 
 	// Cosmic microwave background temperature, Kelvins; J = planck_function(T_CMB,nu)
 	double T_CMB;
@@ -177,8 +177,14 @@ private:
 
 public:
 
-	unsigned short HII_region_at_LOS;	// = 0 - HII region is not on the line of sight; = 1 - HII region is on the line of sight
-	
+	unsigned short HII_region_at_LOS;	// = 0 - HII region is not centered on the line of sight; = 1 - HII region is centered on the line of sight
+	unsigned short HII_region_at_LOS_infront_maser;	// = 0 - HII region does not intersect line-of-sight in front of the maser region; = 1 - HII region intersects line-of-sight in front of the maser region
+
+	double tau_HII_infront(const double freq) 	// optical depth of the HII region at a given frequency on line-of-sight in front of the maser region
+	{
+		return HII_region_at_LOS_infront_maser * ( HII_turn_freq / freq) * ( HII_turn_freq / freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
+	}
+
 	double tau_dust(const double & freq) 	// optical depth of external dust at a given frequency
 	{
 		return tau_nu0 * pow( freq / nu0, p); // see e.g. Sobolev et al. 1997
@@ -254,17 +260,27 @@ public:
 			return 0.0;
 	}
 
+	double external_dust_layer_emission(const double & freq) //emission of exteranl dust layer on LOS
+	{
+		return oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq);
+	}
+
+	double external_dust_layer_emission(const double & freq, const double & time) //emission of exteranl dust layer on LOS
+	{
+		oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq, time);
+	}
+
 	double continuum_behind_maser_region(const double & freq) 	// computes continuum behind the maser region
 	{
-		const double THII = exp(- HII_region_included * tau_HII(freq)) * planck_function(T_CMB,freq) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
-		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
+		const double THII = exp(- HII_region_at_LOS_behind_maser * tau_HII(freq)) * planck_function(T_CMB,freq) + oneMinusExp(HII_region_at_LOS_behind_maser * tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
+		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + external_dust_layer_emission(freq); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
 		return Td1;
 	}
 
 	double continuum_behind_maser_region(const double & freq, const double & time) 	// computes continuum behind the maser region
 	{
-		const double THII = exp(- HII_region_included * tau_HII(freq)) * planck_function(T_CMB,freq) + HII_region_included * oneMinusExp(tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
-		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq, time); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
+		const double THII = exp(- HII_region_at_LOS_behind_maser * tau_HII(freq)) * planck_function(T_CMB,freq) + oneMinusExp(HII_region_at_LOS_behind_maser * tau_HII(freq)) * planck_function(Te,freq);  // the HII region background emission and CMB emission absorbed by the HII region. This evaluates to non-attenuated CMB emission if the HII region is not at the line-of-sight
+		const double Td1 = exp(-tau_dust_LOS(freq)) * THII + external_dust_layer_emission(freq, time); //the contribution of external dust behind the maser region in the case if the external dust is at the line-of-sight
 		return Td1;
 	}
 
@@ -283,15 +299,21 @@ public:
 		tau_nu0 = 1.0;
 		read_Jext_from_file = 0;
 		inner_dust_included = 0;
-		HII_region_included = 1;
 		HII_region_at_LOS = 1;
+		HII_region_at_LOS_behind_maser = 0;
+		HII_region_at_LOS_infront_maser = 0;
 		outer_dust_at_LOS = 1;
 		read_parameters(fin);
 		if (Wd > 0.99999) {
 			Wd = 1.0e00;
 		}
 		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
-		if (WHii <= 100. * DBL_EPSILON || HII_region_at_LOS == 0) HII_region_included = 0;
+		if (WHii > 0 && HII_region_at_LOS == 1) HII_region_at_LOS_behind_maser = 1;
+		if (WHii > 1. - DBL_EPSILON && HII_region_at_LOS == 1) HII_region_at_LOS_infront_maser = 1;
+		if (HII_region_at_LOS == 0 && WHii > 0.5) {
+			HII_region_at_LOS_behind_maser = 1;
+			HII_region_at_LOS_infront_maser = 1;
+		}
 		//read_TdWd_from_file("TdWd.txt");
 	}
 
