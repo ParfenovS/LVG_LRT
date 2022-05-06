@@ -150,7 +150,8 @@ private:
 
 	double tau_HII(const double freq) 	// optical depth of the HII region at a given frequency
 	{
-		return ( HII_turn_freq / freq) * ( HII_turn_freq / freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
+		const double freq_ratio = HII_turn_freq / freq;
+		return freq_ratio * freq_ratio; 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
 	}
 
 	double var_Td(const double & time) // dependence of external dust temperature on time
@@ -267,7 +268,7 @@ public:
 
 	double external_dust_layer_emission(const double & freq, const double & time) //emission of exteranl dust layer on LOS
 	{
-		oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq, time);
+		return oneMinusExp(tau_dust_LOS(freq)) * outer_dust_source_function(freq, time);
 	}
 
 	double continuum_behind_maser_region(const double & freq) 	// computes continuum behind the maser region
