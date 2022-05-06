@@ -182,7 +182,7 @@ public:
 
 	double tau_HII_infront(const double freq) 	// optical depth of the HII region at a given frequency on line-of-sight in front of the maser region
 	{
-		return HII_region_at_LOS_infront_maser * ( HII_turn_freq / freq) * ( HII_turn_freq / freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
+		return HII_region_at_LOS_infront_maser * tau_HII(freq); 	// see Sobolev & Deguchi 1994, Sobolev et al. 1997
 	}
 
 	double tau_dust(const double & freq) 	// optical depth of external dust at a given frequency
