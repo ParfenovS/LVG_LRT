@@ -255,13 +255,15 @@ protected:
 
 		const double Tcloud_cont = exp(-mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu) +
 									oneMinusExp(mol->rad_trans[i].taud_in*beamH) * dust_HII_CMB_Jext_emission->inner_dust_source_function(nu); // contribution of the maser cloud into continuum emission
-		const double Tdust_infront_cont = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud_cont; // absorption of continuum by the external dust in front of the maser region at the line-of-sight
+		const double Tdust_infront_cont = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud_cont + dust_HII_CMB_Jext_emission->external_dust_layer_emission(nu); // absorption of continuum and emission by the external dust in front of the maser region at the line-of-sight
+		const double THii_infront_cont = exp(-dust_HII_CMB_Jext_emission->tau_HII_infront(nu)) * Tdust_infront_cont; // absorption of continuum by the HII region in front of the maser region
 
 		const double Tcloud = exp(-mol->rad_trans[i].tau*beamH) * dust_HII_CMB_Jext_emission->continuum_behind_maser_region(nu) +
 									oneMinusExp(mol->rad_trans[i].tau*beamH) * compute_source_function(i, mol); // contribution of the maser cloud into total emission
-		const double Tdust_infront = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud; // absorption by the external dust in front of the maser region at the line-of-sight
+		const double Tdust_infront = exp(-dust_HII_CMB_Jext_emission->tau_dust_LOS(nu)) * Tcloud + dust_HII_CMB_Jext_emission->external_dust_layer_emission(nu); // absorption and emission by the external dust in front of the maser region at the line-of-sight
+		const double THii_infront = exp(-dust_HII_CMB_Jext_emission->tau_HII_infront(nu)) * Tdust_infront; // absorption of continuum by the HII region in front of the maser region
 
-		mol->rad_trans[i].Tbr = (Tdust_infront - Tdust_infront_cont) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
+		mol->rad_trans[i].Tbr = (THii_infront - THii_infront_cont) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
 	void find_blends() 	// searching for overlapped lines, only local overlapping is taken into account
