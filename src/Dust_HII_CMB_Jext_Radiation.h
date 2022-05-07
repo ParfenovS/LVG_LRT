@@ -309,7 +309,7 @@ public:
 			Wd = 1.0e00;
 		}
 		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
-		if (WHii > 0 && HII_region_at_LOS == 1) HII_region_at_LOS_behind_maser = 1;
+		if (WHii > DBL_EPSILON && HII_region_at_LOS == 1) HII_region_at_LOS_behind_maser = 1;
 		if (WHii > 1. - DBL_EPSILON && HII_region_at_LOS == 1) HII_region_at_LOS_infront_maser = 1;
 		if (HII_region_at_LOS == 0 && WHii > 0.5) {
 			HII_region_at_LOS_behind_maser = 1;
