@@ -43,6 +43,7 @@ private:
         double integ_err[1];
         int integration_success = 0;
         integration_success = hcubature(1, integrand_for_cubature, &fdata, 1, x_min, x_max, 100000000, 1.e-60, BETA_ACCURACY, ERROR_INDIVIDUAL, integ_res, integ_err);
+		if (integration_success != 0) throw runtime_error("integration for escape probability has failed");
 		return integ_res[0];
 	}
 
