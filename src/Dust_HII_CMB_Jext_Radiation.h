@@ -197,9 +197,9 @@ private:
 	{
 		if (HII_region_at_LOS == 0) return min(iWd, iWhii);
 		if (iWd + iWhii <= (1./8.)) return 0;
-		const double Wmin = min(iWd, iWhii);
-		const double Wmax = max(iWd, iWhii);
-		return 0.5 * sqrt(Wmin) * (sqrt(Wmax) + sqrt(Wmin) - 0.5 + max(0., sqrt(Wmin) + 0.5 - 1.));
+		const double sqrtWmin = min(iWd, iWhii);
+		const double sqrtWmax = max(iWd, iWhii);
+		return 0.5 * sqrtWmin * (sqrtWmax + sqrtWmin - 0.5 + max(0., sqrtWmin + 0.5 - 1.));
 	}
 
 public:
