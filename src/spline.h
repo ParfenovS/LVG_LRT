@@ -154,7 +154,7 @@ public:
         akima_calc (stateb, statec, stated, size, m);
     }
 
-    ~akima_spline()
+    void clear()
     {
         if (allocated) {
             free (stateb);
@@ -165,6 +165,12 @@ public:
             free (x_array);
             free (y_array);
         }
+        allocated = false;
+    }
+
+    ~akima_spline()
+    {
+        clear();
     }
 
     double akima_eval(double x)
