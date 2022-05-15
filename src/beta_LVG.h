@@ -174,16 +174,7 @@ public:
 
 	~beta_LVG()
 	{
+		spline_neg.clear();
+		spline_pos.clear();
 	}
 };
-
-/*
-double beta_LVG::tauCutOff;
-double beta_LVG::sig;
-double beta_LVG::oPlusSigDiv3;
-double beta_LVG::tau_min;
-double beta_LVG::tau_max;
-
-tk::spline beta_LVG::beta_spline_neg; // interpolation for negative optical depths
-tk::spline beta_LVG::beta_spline_pos; // interpolation for positive optical depths
-*/
