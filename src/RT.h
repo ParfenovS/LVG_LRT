@@ -410,6 +410,7 @@ protected:
 				}
 			}
 			pop_norm = sqrt(pop_norm);
+			underrelax_level.clear();
 		}
 		return there_were_bad_levels;
 	}
