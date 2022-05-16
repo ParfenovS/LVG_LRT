@@ -152,7 +152,7 @@ protected:
 		auto kabsi = [&](const size_t & i, const size_t ispec) { 	//absorption coefficient for i-th transition of ispec molecule without taking into account line overlapping
 			const size_t & up = mols[ispec].rad_trans[i].up_level;
 			const size_t & low = mols[ispec].rad_trans[i].low_level;
-			return modelPhysPars::Hdens * modelPhysPars::abundance[ispec] * (mols[ispec].levels[low].pop * mols[ispec].rad_trans[i].Blu - mols[ispec].levels[up].pop * mols[ispec].rad_trans[i].Bul);
+			return modelPhysPars::n_mol[ispec] * (mols[ispec].levels[low].pop * mols[ispec].rad_trans[i].Blu - mols[ispec].levels[up].pop * mols[ispec].rad_trans[i].Bul);
 		};
 
 		double kabs = kabsi(i, mol->idspec);
@@ -165,7 +165,7 @@ protected:
 	double emiss_coeff(const size_t & i, molModel *mol) // emission coefficient for i-th transition
 	{
 		auto emissi = [&](const size_t & i, const size_t ispec) { 	// emission coefficient for i-th transition of ispec molecule without taking into account line overlapping
-			return modelPhysPars::Hdens * modelPhysPars::abundance[ispec] * mols[ispec].rad_trans[i].A * mols[ispec].levels[mols[ispec].rad_trans[i].up_level].pop;
+			return modelPhysPars::n_mol[ispec] * mols[ispec].rad_trans[i].A * mols[ispec].levels[mols[ispec].rad_trans[i].up_level].pop;
 		};
 
 		double emiss = emissi(i, mol->idspec);
@@ -205,7 +205,7 @@ protected:
 			beta_S = S * (1.0e00 - beta);
 		} else {
 			S = 0.0;
-			beta_S = 0.5 * emiss * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::Hdens * modelPhysPars::abundance[mol->idspec]); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
+			beta_S = 0.5 * emiss * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); 	// note, that (1-b)/tau -> 0.5 for tau -> 0.0
 		}
 
 		mol->rad_trans[i].J = beta_S + beta * mol->rad_trans[i].JExt + 
