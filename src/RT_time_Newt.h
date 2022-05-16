@@ -333,7 +333,7 @@ public:
 					}
 					pop[ispec][0] = this->partition_function_ratio[ispec] - pops_sum;
 					if (solveStatEqSuccess == 0) {
-						there_were_bad_levels = ( update_check_pops(ispec, mols, pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter_in, oldpops_Ng[ispec], pop_norm[ispec]) || there_were_bad_levels);
+						there_were_bad_levels = ( update_check_pops(&mols[ispec], pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter_in, oldpops_Ng[ispec], pop_norm[ispec]) || there_were_bad_levels);
 					}
 				}
 				if (solveStatEqSuccess == 0 && cerr_output_iter_progress) {
