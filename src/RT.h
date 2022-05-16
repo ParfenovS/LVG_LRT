@@ -13,6 +13,7 @@ protected:
 	double beamH; 												// beaming factor; this is eps^-1 = D(ln r)/D(ln V) quantity from e.g. Sobolev et al. 1997, Cragg et al. 2005
 	double lineWidth; 											// spectral width of the lines; this will be used to determine blended lines
 	double invlineWidth;										// = 1 / lineWidth
+	double minimum_tau;											// minimum value among optical depths < -1
 	dust_HII_CMB_Jext_radiation *dust_HII_CMB_Jext_emission; 	// this object will be used for calculations of external emission
 	bool cerr_output_iter_progress; 							// = true - the current iteration number, maximum relative pop difference and corresponding level number will be printed on the standard cerr pipe
 	string line_profile_shape; 									// ="g" - Gaussian line profile; ="r" - rectangular line profile
@@ -190,6 +191,7 @@ protected:
 		mol->rad_trans[i].tau *= HC4PI;
 		mol->rad_trans[i].tau += mol->rad_trans[i].taud_in;
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
+		if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX && mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 	}
 	
 	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S)		//computes mean intensity, source function, escape probability, and their product for radiative transition i
@@ -373,33 +375,10 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			vector<bool> underrelax_level(mol->levels.size(), false);
-			double minimum_tau = 0.0;
-			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-				if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
-					underrelax_level[mol->rad_trans[i].up_level] = true;
-					underrelax_level[mol->rad_trans[i].low_level] = true;
-				}
-				if (mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
-				for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) { 	// take into account line overlapping
-					if (mols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX) {
-						underrelax_level[mol->rad_trans[i].up_level] = true;
-						underrelax_level[mol->rad_trans[i].low_level] = true;
-						if (mols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau < minimum_tau) minimum_tau = mols[mol->rad_trans[i].blends[j].ispec].rad_trans[mol->rad_trans[i].blends[j].id].tau;
-					}
-				}
-			}
-			/* more levels to underralax
-			for (size_t i = 0; i < mol->rad_trans.size(); i++) {
-				if (underrelax_level[mol->rad_trans[i].up_level]) underrelax_level[mol->rad_trans[i].low_level] = true;
-				if (underrelax_level[mol->rad_trans[i].low_level]) underrelax_level[mol->rad_trans[i].up_level] = true;
-			}
-			*/
 			const double var_under_relax_fac = 1.0 / (ceil(fabs(minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				if (underrelax_level[i]) mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
-				else mol->levels[i].pop = max(pop[i], MIN_POP);
+				mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
 				pops_sum += mol->levels[i].pop;
 			}
 			pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
@@ -412,8 +391,8 @@ protected:
 				}
 			}
 			pop_norm = sqrt(pop_norm);
-			underrelax_level.clear();
 		}
+		minimum_tau = 1.0;
 		return there_were_bad_levels;
 	}
 
@@ -459,6 +438,7 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
 		this->cerr_output_iter_progress = true;
+		minimum_tau = 1.0;
 	}
 	
 	RT(istream & cin)
