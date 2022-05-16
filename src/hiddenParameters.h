@@ -2,14 +2,14 @@
 
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
-#define BETA_NUM_SPLINE_POINTS 10000                      // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
+#define BETA_NUM_SPLINE_POINTS 10000                    // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
 #define MIN_POP_FOR_DIFF_CALC 1.e-14                    // the levels with population below this limit will not be taken into account in calculations of the maximum difference between lev. pops. during local fixed point iterations
 #define MIN_POP 1.e-30                                  // the populations can't be lower than this value
 #define MAX_POP (1.0-1000*DBL_EPSILON)                  // the populations can't be higher than this value
 #define Ng_order 2                                      // the order of Ng acceleration
 #define Ng_start (Ng_order + 1)                         // the iteration number from which Ng acceleration will be switched on
-#define DoNg true                                       // whether to use Ng acceleration
-#define MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX -1.0       // the underrelaxation will be for the levels within radiative transitions with tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX
+#define DoNg false                                      // whether to use Ng acceleration
+#define MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX -1.0       // the underrelaxation will be used if there is tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX
 #define MAX_LOCAL_ACCURACY 1.e-11                       // maximum relative local error used at each step of integration over time
 #define MAX_NUM_INNER_STEPS 10000                       // maximum number of local iterations to achive LOCAL_ACCURACY
 #define INITIAL_TIME_STEP 1.e-2                         // the initial value of the time step used for integration over time, [s]
