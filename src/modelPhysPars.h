@@ -6,7 +6,7 @@ struct modelPhysPars						// stores physical conditions
 	static size_t nSpecies;					// number of molecular species
 	static size_t collPartCounter;			// index used to assign fractional abundances of collisional agents to a given molecular species
 	static double Tks;						// gas kinetic temperature [K]
-	static double Hdens;					// number density of H2 [1/cm3]
+	static double H2dens;					// number density of H2 [1/cm3]
 	static double max_NH2dV;				// maximum specific column density of H2 [cm-3 s]
 	static vector<double> fraction_H2;		// array with fractional abundances (wrt Hdens) of collisional agents
 	static vector<double> NdV;				// specific column density [cm-3 s]
@@ -17,7 +17,7 @@ struct modelPhysPars						// stores physical conditions
 size_t modelPhysPars::nSpecies;
 size_t modelPhysPars::collPartCounter;
 double modelPhysPars::Tks;
-double modelPhysPars::Hdens;
+double modelPhysPars::H2dens;
 double modelPhysPars::max_NH2dV;
 vector<double> modelPhysPars::fraction_H2;
 vector<double> modelPhysPars::NdV;
@@ -36,7 +36,7 @@ void initialize_modelPhysPars(T & fin)
 	modelPhysPars::Tks = readline<double>(fin); 	// readline function is taken from auxiliary.h
 
 	getline(fin, str);
-	modelPhysPars::Hdens = readline<double>(fin);
+	modelPhysPars::H2dens = readline<double>(fin);
 
 	getline(fin, str);
 	modelPhysPars::nSpecies = readline<size_t>(fin);
@@ -51,7 +51,7 @@ void initialize_modelPhysPars(T & fin)
 	for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 		double NH2dV = modelPhysPars::NdV[ispec] / modelPhysPars::abundance[ispec];
 		if (NH2dV > modelPhysPars::max_NH2dV) modelPhysPars::max_NH2dV = NH2dV;
-		modelPhysPars::n_mol.push_back(modelPhysPars::Hdens * modelPhysPars::abundance[ispec]);
+		modelPhysPars::n_mol.push_back(modelPhysPars::H2dens * modelPhysPars::abundance[ispec]);
 	}
 
 	getline(fin,str);
