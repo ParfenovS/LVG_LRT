@@ -8,7 +8,7 @@
 #define MAX_POP (1.0-1000*DBL_EPSILON)                  // the populations can't be higher than this value
 #define Ng_order 2                                      // the order of Ng acceleration
 #define Ng_start (Ng_order + 1)                         // the iteration number from which Ng acceleration will be switched on
-#define DoNg false                                      // whether to use Ng acceleration
+#define DoNg true                                       // whether to use Ng acceleration
 #define MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX -1.0       // the underrelaxation will be used if there is tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX
 #define MAX_LOCAL_ACCURACY 1.e-11                       // maximum relative local error used at each step of integration over time
 #define MAX_NUM_INNER_STEPS 10000                       // maximum number of local iterations to achive LOCAL_ACCURACY
