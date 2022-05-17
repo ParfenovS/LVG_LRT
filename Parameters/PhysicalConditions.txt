@@ -1,16 +1,18 @@
 # Gas kinetic temperature, K
 220
-# Molecular hydrogen density, nH_2, cm^-3
+# Number density of molecular hydrogen, nH2, cm^-3
 160000.0
+# Mean molecular weight per H2 molecule in AMU,         dust-to-gas mass ratio (both are not important if the dust inside the maser region is absent)
+2.8                                                     0.01
 # Number of molecular species
 2
-# Specific column density, cm^-3 s
+# Specific column densities for molecular species, cm^-3 s
 5e+12
 5e+12
-# Molecular abundance (wrt H2)
+# Molecular abundances (wrt H2)
 1.e-7
 1.e-7
-# Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile:
+# Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile, the order of LAMDA datafiles is taken from RadiativeTransfer.txt:
 0.25
 0.75
 0.25
