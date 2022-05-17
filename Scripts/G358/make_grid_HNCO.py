@@ -23,7 +23,7 @@ GAS_TEMPERATURES = numpy.arange(50, 110, 10)
 #GAS_TEMPERATURES = [80]
 SPECIFIC_COLUMN_DENSITIES = numpy.array([2.5e12])
 #SPECIFIC_COLUMN_DENSITIES = numpy.array([3.5e12])
-COLLISION_PARTNERS_FRACTIONS = [0.2, 0.8]  # partners for HNCO: He , H2
+COLLISION_PARTNERS_FRACTIONS = [0.2, 1.0]  # partners for HNCO: He , H2
 #### ***************
 INITIAL_SOLUTION = 2 # 0 - from file; 1 - optically thin; 2 - LTE
 INITIAL_SOLUTION_FILENAME = "Populations/Pn.txt"
