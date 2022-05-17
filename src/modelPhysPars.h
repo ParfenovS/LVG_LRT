@@ -8,6 +8,8 @@ struct modelPhysPars						// stores physical conditions
 	static double Tks;						// gas kinetic temperature [K]
 	static double H2dens;					// number density of H2 [1/cm3]
 	static double max_NH2dV;				// maximum specific column density of H2 [cm-3 s]
+	static double mean_mol_weight;			// mean molecular weight per H2 molecule [AMU]
+	static double dust_gas_mass_ratio;		// dust-to-gas mass ratio
 	static vector<double> fraction_H2;		// array with fractional abundances (wrt Hdens) of collisional agents
 	static vector<double> NdV;				// specific column density [cm-3 s]
 	static vector<double> abundance;		// molecular abundance (wrt H2)
@@ -19,6 +21,8 @@ size_t modelPhysPars::collPartCounter;
 double modelPhysPars::Tks;
 double modelPhysPars::H2dens;
 double modelPhysPars::max_NH2dV;
+double modelPhysPars::mean_mol_weight;
+double modelPhysPars::dust_gas_mass_ratio;
 vector<double> modelPhysPars::fraction_H2;
 vector<double> modelPhysPars::NdV;
 vector<double> modelPhysPars::abundance;
@@ -27,6 +31,7 @@ vector<double> modelPhysPars::n_mol;
 template <typename T>
 void initialize_modelPhysPars(T & fin)
 {
+	istringstream sfin;
 	string str;
 
 	if (!fin.good()) 								// check if we found the file or that the console input is not corrupted
@@ -37,6 +42,12 @@ void initialize_modelPhysPars(T & fin)
 
 	getline(fin, str);
 	modelPhysPars::H2dens = readline<double>(fin);
+
+	getline(fin, str);
+	getline(fin, str);
+	sfin.str(trim(str));
+	sfin >> modelPhysPars::mean_mol_weight >> modelPhysPars::dust_gas_mass_ratio;
+	sfin.clear();
 
 	getline(fin, str);
 	modelPhysPars::nSpecies = readline<size_t>(fin);
