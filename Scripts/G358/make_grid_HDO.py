@@ -215,7 +215,7 @@ def prepare_input(pars, in_pops_file="", out_pops_file=""):
     cin += "# Wd	tau0	nu0 [Hz]	p	Td [K]		inner_dust\n"
     cin += str(pars.Wd) + " " + str(pars.tauDust) + " " + str(pars.freqDust) + " " + str(pars.pDust) + " " + str(pars.Td) + " " + str(INNER_DUST_INCLUDED) + "\n"
     cin += "# inner dust temperature [K],           inner dust mass absorption coefficient at frequency nu0 [cm^2/g]\n"
-    cin += "220                                     439.8125\n"
+    cin += "220                                     3.41\n"
     cin += "# HII region emission: J = WHII * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (turnFreq/nu)^2 (see van der Walt 2014 and Appendix A from Sobolev et al. 1997)\n"
     cin += "# where WHII - dillution factor, turnFreq - turnover frequency of HII region, Te - electron temperature [K]\n"
     cin += "# WHII	turnFreq [Hz]		Te [K]		HII region is centered on the line-of-sight (1) or not (0)\n"
