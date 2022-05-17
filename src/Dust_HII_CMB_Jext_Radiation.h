@@ -14,6 +14,7 @@ private:
 
 	// Dust emission is given by modified black body emission multiplied by Wd; the mean intensity J = Wd * tau0 * (nu/nu0)^p * planck_function(Td,nu) (see e.g. Sobolev et al. 1997, van der Walt 2014)
 	double tau_nu0;				// optical depth at frequency=nu0 from the modified black body function
+	double k_nu0;				// [cm^/g] mass dust absorption coefficient at frequency=nu0
 	double nu0;					// [Hz], nu0 from the modified black body function
 	double p;					// spectral index
 	double Td_in;				// [K], temperature of dust within the maser region
@@ -140,6 +141,11 @@ private:
 		sfin >> Wd >> tau_nu0 >> nu0 >> p >> Td >> inner_dust_included;
 		sfin.clear();
 
+		for (short i = 0; i < 2; i++) getline(fin, str);
+		sfin.str(trim(str));
+		sfin >> Td_in >> k_nu0;
+		sfin.clear();
+
 		for (short i = 0; i < 4; i++) getline(fin, str);
 		sfin.str(trim(str));
 		sfin >> WHii >> HII_turn_freq >> Te >> HII_region_at_LOS;
@@ -147,7 +153,6 @@ private:
 
 		getline(fin, str);
 		T_CMB = readline<double>(fin);
-		Td_in = Td;
 	}
 
 	void check_sources_at_LOS(const double & iWd, const double & iWhii) // check whether the external radiation sources are at line-of-sight
@@ -230,8 +235,7 @@ public:
 	double tau_dust_in(const double & freq, const double & lineWidth) 	// optical depth of the dust inside the maser region at a given frequency and for a given line width
 	{
 		//return inner_dust_included * 2.6e-25 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Sherwood et al. 1980;
-		//return inner_dust_included * (0.899 * 1.5e-26) * 2 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Ossenkopf & Henning et al. 1994;
-		return inner_dust_included * (3.4 * 1.5e-26) * 2 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Ossenkopf & Henning et al. 1994;
+		return inner_dust_included * k_nu0 * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Ossenkopf & Henning et al. 1994;
 	}
 
 	double outer_dust_source_function(const double & freq) 	// source function for the external dust emission
@@ -345,7 +349,8 @@ public:
 		Wd = 0;
 		p = 2.0;
 		nu0 = 300.e9;
-		tau_nu0 = 1.0;
+		tau_nu0 = 0.0;
+		k_nu0 = 0.0;
 		read_Jext_from_file = 0;
 		inner_dust_included = 0;
 		HII_region_at_LOS = 1;
