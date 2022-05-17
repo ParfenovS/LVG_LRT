@@ -77,7 +77,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 				}
 			}
 			if (C_counter[id_up][id_low] > num_of_coll_partners) throw runtime_error("error: C_counter > fraction_H2.size() in set_trans function in molModel.h");
-			coll_trans[id_up][id_low] += modelPhysPars::fraction_H2[modelPhysPars::collPartCounter + C_counter[id_up][id_low]]*get<double>(par_value)*modelPhysPars::Hdens; 	// sum Cij for all collisional agents
+			coll_trans[id_up][id_low] += modelPhysPars::fraction_H2[modelPhysPars::collPartCounter + C_counter[id_up][id_low]]*get<double>(par_value)*modelPhysPars::H2dens; 	// sum Cij for all collisional agents
 			C_counter[id_up][id_low] += 1;
 			compute_C(id_up, id_low, num_of_coll_partners);
 		}
