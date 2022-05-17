@@ -229,7 +229,7 @@ public:
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				mols[ispec].rad_trans[i].taud_in = dust_HII_CMB_Jext_emission->tau_dust_in(mols[ispec].rad_trans[i].nu, lineWidth); //optical depth of the dust inside the maser region
-				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::Hdens * invlineWidth / modelPhysPars::max_NH2dV; //absorption coefficient of the dust inside the maser region
+				mols[ispec].rad_trans[i].kabs_dust = mols[ispec].rad_trans[i].taud_in * modelPhysPars::H2dens * invlineWidth / modelPhysPars::max_NH2dV; //absorption coefficient of the dust inside the maser region
 				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
 			}
 		}
