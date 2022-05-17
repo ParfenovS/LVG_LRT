@@ -22,7 +22,7 @@ HDENSITIES = numpy.array([5.6e7])
 GAS_TEMPERATURES = numpy.arange(50, 310, 10)
 #GAS_TEMPERATURES = [80]
 SPECIFIC_COLUMN_DENSITIES = numpy.array([1.7e13])
-COLLISION_PARTNERS_FRACTIONS = [1.0]  # partners for CH3OH: H2 , He
+COLLISION_PARTNERS_FRACTIONS = [1.0]  # partners for HDO: H2
 #### ***************
 INITIAL_SOLUTION = 2 # 0 - from file; 1 - optically thin; 2 - LTE
 INITIAL_SOLUTION_FILENAME = "Populations/Pn.txt"
