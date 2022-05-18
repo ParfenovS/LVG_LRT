@@ -12,19 +12,19 @@ private:
 	vector<double> Td_from_file; // array of dust temperatures from file with dependence of dust temperature and dillution factor on time
 	vector<double> Wd_from_file; // array of dust dillution factors from file with dependence of dust temperature and dillution factor on time
 
-	// Dust emission is given by modified black body emission multiplied by Wd; the mean intensity J = Wd * tau0 * (nu/nu0)^p * planck_function(Td,nu) (see e.g. Sobolev et al. 1997, van der Walt 2014)
-	double tau_nu0;				// optical depth at frequency=nu0 from the modified black body function
+	// Dust emission is given by a black body emission multiplied by dilution factor; the mean intensity J = Wd * (1 - exp(tau_nu0 * (nu/nu0)^p)) * planck_function(Td,nu)
+	double tau_nu0;				// optical depth at frequency=nu0
 	double k_nu0;				// [cm^/g] mass dust absorption coefficient at frequency=nu0
-	double nu0;					// [Hz], nu0 from the modified black body function
+	double nu0;					// [Hz], frequency at which the external dust layer optical depth = tau_nu0
 	double p;					// spectral index
 	double Td_in;				// [K], temperature of dust within the maser region
 	double Td;					// [K], external dust temperature
-	double Wd;					// dillution factor for the dust emission
+	double Wd;					// dilution factor for the dust emission
 	unsigned short inner_dust_included;	// = 0 - there will be no dust inside the maser region; = 1 - there will be dust inside the maser region
 	unsigned short outer_dust_at_LOS;	// = 0 - the dust outside the maser region is not on the line of sight; = 1 - the dust outside the maser region is on the line of sight
 	
 	// HII region emission, see e.g. Sobolev et al. 1997, J = WHii * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (HII_turn_freq/nu)^2
-	double WHii;				//dillution factor for the HII region emission
+	double WHii;				//dilution factor for the HII region emission
 	double HII_turn_freq; 		// [Hz], turnover frequency of HII region emission
 	double Te; 					// [K], HII region electron temperature
 	unsigned short HII_region_at_LOS_behind_maser;	// = 0 - HII region does not intersect line-of-sight behind the maser region; = 1 - HII region intersects line-of-sight behind the maser region
