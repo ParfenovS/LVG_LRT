@@ -235,7 +235,7 @@ public:
 	double tau_dust_in(const double & freq, const double & lineWidth) 	// optical depth of the dust inside the maser region at a given frequency and for a given line width
 	{
 		//return inner_dust_included * 2.6e-25 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Sherwood et al. 1980;
-		return inner_dust_included * k_nu0 * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Ossenkopf & Henning et al. 1994;
+		return inner_dust_included * k_nu0 * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p);
 	}
 
 	double outer_dust_source_function(const double & freq) 	// source function for the external dust emission
