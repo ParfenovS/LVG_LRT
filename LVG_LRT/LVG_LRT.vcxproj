@@ -148,6 +148,7 @@
     <ClInclude Include="..\src\transition.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\cubature\hcubature.c" />
     <ClCompile Include="..\src\LVG_LRT.cpp" />
     <ClCompile Include="..\src\stdafx.cpp" />
   </ItemGroup>
