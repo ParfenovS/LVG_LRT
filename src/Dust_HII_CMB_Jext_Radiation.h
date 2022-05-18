@@ -354,20 +354,11 @@ public:
 		read_Jext_from_file = 0;
 		inner_dust_included = 0;
 		HII_region_at_LOS = 1;
-		HII_region_at_LOS_behind_maser = 0;
-		HII_region_at_LOS_infront_maser = 0;
-		outer_dust_at_LOS = 1;
 		read_parameters(fin);
 		if (Wd > 0.99999) {
 			Wd = 1.0e00;
 		}
-		if (Wd   <= 0.5) outer_dust_at_LOS = 0;
-		if (WHii > DBL_EPSILON && HII_region_at_LOS == 1) HII_region_at_LOS_behind_maser = 1;
-		if (WHii > 1. - DBL_EPSILON && HII_region_at_LOS == 1) HII_region_at_LOS_infront_maser = 1;
-		if (HII_region_at_LOS == 0 && WHii > 0.5) {
-			HII_region_at_LOS_behind_maser = 1;
-			HII_region_at_LOS_infront_maser = 1;
-		}
+		check_sources_at_LOS(Wd, WHii);
 		Wcross = get_Wcross(Wd, WHii);
 		//read_TdWd_from_file("TdWd.txt");
 	}
