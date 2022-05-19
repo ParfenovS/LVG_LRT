@@ -19,6 +19,7 @@
 
 /* Author:  G. Jungman
  */
+#pragma once
 #include <stdlib.h>
 #include <math.h>
 #include <vector>
