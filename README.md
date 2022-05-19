@@ -19,7 +19,7 @@ where the first command argument denotes the index of a molecular species; the s
 
 The repository also contains examples of python scripts which can be used to calculate grids of models for a range of input parameters (see Scripts directory). There is also the python script Scripts/plot_pops_vs_time.py to plot the dependence of level populations on time from the binary file that is produced by LVG_LRT.exe when it is configured to integrate kinetic equations for level populations (by default LVG_LRT.exe solves statistical equilibrium equations).
 
-File kabs_1e6_no_ice.dat contains dust opacities from column 2 of Table 1 in [ Ossenkopf & Henning (1994)](https://ui.adsabs.harvard.edu/abs/1994A%26A...291..943O/abstract).
+File kabs_1e6_no_ice.dat contains dust opacities from column 3 of Table 1 in [ Ossenkopf & Henning (1994)](https://ui.adsabs.harvard.edu/abs/1994A%26A...291..943O/abstract).
 
 An example of results produced with the code can be found in [Chen et al. (2019)](https://ui.adsabs.harvard.edu/abs/2019ApJ...877...90C/abstract).
 
