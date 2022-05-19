@@ -1,11 +1,12 @@
 #pragma once
+#include "spline.h"
 
 class dust_HII_CMB_Jext_radiation
 {
 private:
 	
 	unsigned short read_Jext_from_file; // = 1 - read mean intensity of external radiation from file
-	vector<double> nu_from_file; // array of frequencies from the file with external radiation
+	vector<double> nu_J_from_file; // array of frequencies from the file with external radiation mean intensity
 	vector<double> J_from_file; // array of occupation numbers from the file with external radiation
 
 	vector<double> time_from_file; // array of time points from file with dependence of dust temperature and dillution factor on time
@@ -22,6 +23,11 @@ private:
 	double Wd;					// dilution factor for the dust emission
 	unsigned short inner_dust_included;	// = 0 - there will be no dust inside the maser region; = 1 - there will be dust inside the maser region
 	unsigned short outer_dust_at_LOS;	// = 0 - the dust outside the maser region is not on the line of sight; = 1 - the dust outside the maser region is on the line of sight
+	bool use_kabs_from_file;	// = true - take dust absorption coefficients from file; = false - assume that absorption coefficient ~ frequency^p
+	string kabs_filename; 		// name of file with dust mass absorption coefficient depenedence on wavelength (the first column is wavelength in microns, the second column is mass absorption coefficient in cm^2/g)
+	vector<double> log_wave_kabs_from_file; // array of logarithms of wavelenght from the file with dust absorption coefficient
+	vector<double> log_kabs_from_file; // array of logarithms of dust absorptoin coefficients
+	akima_spline spline_kabs; // structure for akima spline interpolation of dust absorption coefficients on wavelength
 	
 	// HII region emission, see e.g. Sobolev et al. 1997, J = WHii * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (HII_turn_freq/nu)^2
 	double WHii;				//dilution factor for the HII region emission
@@ -34,6 +40,45 @@ private:
 
 	// Cosmic microwave background temperature, Kelvins; J = planck_function(T_CMB,nu)
 	double T_CMB;
+
+	void read_kabs_from_file(const string & filename) 	//read mean intensity of external emission from a file
+	{
+		ifstream fin;
+		istringstream sfin;
+		string str;
+		double input_wavelength, input_kabs;
+
+		fin.open(filename.c_str(), ios::in);
+		if ( !fin.good() ) { 	// check if we found the file
+			fin.close();
+			throw runtime_error("can't find input file with dust absorption coefficients");
+		}
+
+		while (getline(fin,str)) {
+			str = trim(str); 	// trim is taken from auxiliary.h
+			if (str.size() != 0) {
+				sfin.str(str);
+				sfin >> input_wavelength >> input_kabs;
+				sfin.clear();
+				log_wave_kabs_from_file.push_back( log10(input_wavelength * 1.e-4) ); // microns -> cm
+				log_kabs_from_file.push_back( log10(input_kabs) ); 
+			}
+			else break;
+		}
+		fin.close();
+		spline_kabs.akima_init(log_wave_kabs_from_file, log_kabs_from_file); 	// creating spline for dust absorption coefficients from file
+	}
+
+	double get_dust_kabs_from_file(const double & freq)
+	{
+		const double loglam = log10(SPEED_OF_LIGHT / freq);
+		const size_t last_id = log_kabs_from_file.size();
+		if (loglam < log_wave_kabs_from_file[0]) {
+			return pow( 10., log_kabs_from_file[0] + (loglam-log_wave_kabs_from_file[0]) * (log_kabs_from_file[1]-log_kabs_from_file[0])/(log_wave_kabs_from_file[1]-log_wave_kabs_from_file[0]) );
+		} else if (loglam > log_wave_kabs_from_file[last_id-1]) {
+			return pow( 10., log_kabs_from_file[last_id-2] + (loglam-log_wave_kabs_from_file[last_id-2]) * (log_kabs_from_file[last_id-1]-log_kabs_from_file[last_id-2])/(log_wave_kabs_from_file[last_id-1]-log_wave_kabs_from_file[last_id-2]) );
+		} else return pow( 10., spline_kabs.akima_eval(loglam) );
+	}
 
 	void read_J_from_file(const string & filename) 	//read mean intensity of external emission from a file
 	{
@@ -56,7 +101,7 @@ private:
 				sfin.str(str);
 				sfin >> input_nu >> input_J;
 				sfin.clear();
-				nu_from_file.push_back( input_nu );
+				nu_J_from_file.push_back( input_nu );
 				J_from_file.push_back( input_J ); 
 			}
 			else break;
@@ -66,12 +111,12 @@ private:
 
 	double interpolate_Jext_from_file(const double & freq) 	// interpolate mean intensity that has been read from file for a given frequency
 	{
-		if (freq <= nu_from_file[0]) return J_from_file[0];
-		else if (freq >= nu_from_file[nu_from_file.size()-1]) return J_from_file[J_from_file.size()-1];
+		if (freq <= nu_J_from_file[0]) return J_from_file[0];
+		else if (freq >= nu_J_from_file[nu_J_from_file.size()-1]) return J_from_file[J_from_file.size()-1];
 		else {
-			for (size_t i = 0; i < nu_from_file.size()-1; i++ ) {
-				if (nu_from_file[i] <= freq && freq <= nu_from_file[i+1])
-					return J_from_file[i] + (J_from_file[i+1] - J_from_file[i]) / (nu_from_file[i+1] - nu_from_file[i]) * (freq - nu_from_file[i]);  
+			for (size_t i = 0; i < nu_J_from_file.size()-1; i++ ) {
+				if (nu_J_from_file[i] <= freq && freq <= nu_J_from_file[i+1])
+					return J_from_file[i] + (J_from_file[i+1] - J_from_file[i]) / (nu_J_from_file[i+1] - nu_J_from_file[i]) * (freq - nu_J_from_file[i]);  
 			} 
 		}
 		return 0.0;
@@ -146,6 +191,12 @@ private:
 		sfin >> Td_in >> k_nu0;
 		sfin.clear();
 
+		getline(fin, str);
+		use_kabs_from_file = readline<bool>(fin);
+
+		getline(fin, str);
+		kabs_filename= readline<string>(fin);
+
 		for (short i = 0; i < 4; i++) getline(fin, str);
 		sfin.str(trim(str));
 		sfin >> WHii >> HII_turn_freq >> Te >> HII_region_at_LOS;
@@ -218,7 +269,8 @@ public:
 
 	double tau_dust(const double & freq) 	// optical depth of external dust at a given frequency
 	{
-		return tau_nu0 * pow( freq / nu0, p); // see e.g. Sobolev et al. 1997
+		if (use_kabs_from_file) return tau_nu0 * get_dust_kabs_from_file(freq) / get_dust_kabs_from_file(nu0);
+		else return tau_nu0 * pow( freq / nu0, p); // see e.g. Sobolev et al. 1997
 	}
 
 	double tau_dust_LOS(const double & freq) 	// optical depth of external dust at a given frequency on the line of sight
@@ -234,8 +286,12 @@ public:
 
 	double tau_dust_in(const double & freq, const double & lineWidth) 	// optical depth of the dust inside the maser region at a given frequency and for a given line width
 	{
-		//return inner_dust_included * 2.6e-25 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Sherwood et al. 1980;
-		return inner_dust_included * k_nu0 * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p);
+		if (use_kabs_from_file) {
+			return inner_dust_included * get_dust_kabs_from_file(freq) * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV;
+		} else {
+			//return inner_dust_included * 2.6e-25 * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p); // based on Sherwood et al. 1980;
+			return inner_dust_included * k_nu0 * AMU * modelPhysPars::dust_gas_mass_ratio * modelPhysPars::mean_mol_weight * lineWidth * modelPhysPars::max_NH2dV * pow( freq / nu0, p);
+		}
 	}
 
 	double outer_dust_source_function(const double & freq) 	// source function for the external dust emission
@@ -354,21 +410,26 @@ public:
 		read_Jext_from_file = 0;
 		inner_dust_included = 0;
 		HII_region_at_LOS = 1;
+		use_kabs_from_file = false;
 		read_parameters(fin);
 		if (Wd > 0.99999) {
 			Wd = 1.0e00;
 		}
 		check_sources_at_LOS(Wd, WHii);
 		Wcross = get_Wcross(Wd, WHii);
+		if (use_kabs_from_file) read_kabs_from_file(kabs_filename);
 		//read_TdWd_from_file("TdWd.txt");
 	}
 
 	~dust_HII_CMB_Jext_radiation()
 	{
-		nu_from_file.clear();
+		nu_J_from_file.clear();
 		J_from_file.clear();
 		time_from_file.clear();
 		Td_from_file.clear();
 		Wd_from_file.clear();
+		log_wave_kabs_from_file.clear();
+		log_kabs_from_file.clear();
+		spline_kabs.clear();
 	}
 };
