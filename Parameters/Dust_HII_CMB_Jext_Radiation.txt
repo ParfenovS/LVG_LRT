@@ -8,6 +8,10 @@ cloudy_spectrum.dat
 0.0     1.0     1.e13		2.0     220         0
 # inner dust temperature [K],           inner dust mass absorption coefficient at frequency nu0 [cm^2/g]
 220                                     439.8125
+# read dust mass absorption coefficient depenedence on wavelength from file (if it's = 1 then pararamter p and inner dust absorption coefficient are ingnored)
+0
+# name of file with dust mass absorption coefficient depenedence on wavelength (the first column is wavelength in microns, the second column is mass absorption coefficient in cm^2/g)
+kabs_1e6_no_ice.dat
 # HII region emission: J = WHII * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (turnFreq/nu)^2 (see van der Walt 2014 and Appendix A from Sobolev et al. 1997)
 # where WHII - dilution factor, turnFreq - turnover frequency of HII region, Te - electron temperature [K]
 # WHII	turnFreq [Hz]		Te [K]		HII region is centered on the line-of-sight (1) or not (0)
