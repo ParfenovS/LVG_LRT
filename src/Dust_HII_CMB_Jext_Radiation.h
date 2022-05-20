@@ -320,7 +320,7 @@ public:
 			const double J_CMB = Wcross * exp( -(tau_dust(freq) + tau_HII(freq)) ) + \
 								(Wd - Wcross) * exp(-tau_dust(freq)) + \
 								(WHii - Wcross) * exp(-tau_HII(freq)) + \
-								(1 - (Wd + WHii + Wcross)); // cosmic microwave background emission taking into account an absorption by the external dust layer and HII region
+								(1 - (Wd + WHii) + Wcross)); // cosmic microwave background emission taking into account an absorption by the external dust layer and HII region
 
 			const double J_dust = Wd *  oneMinusExp(tau_dust(freq))  * outer_dust_source_function(freq); // Note that this a general formula for dust emission (e.g. Sobolev et al. 1997), while eq. 4 in van der Walt 2014 gives optically thin case
 
