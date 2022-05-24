@@ -283,13 +283,27 @@ protected:
 			throw runtime_error("unknown parameter for line profile shape in find_blends function in RT.h");
 		}
 		double vel_fac = 0.0;
-		for (size_t ispec0 = 0; ispec0 < modelPhysPars::nSpecies; ispec0++) {
-			for (size_t i = 0; i < mols[ispec0].rad_trans.size(); i++) {
-				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-					for (size_t j = 0; j < mols[ispec].rad_trans.size(); j++) {
-						vel_fac = fabs(mols[ispec0].rad_trans[i].nu - mols[ispec].rad_trans[j].nu) / mols[ispec0].rad_trans[i].nu * SPEED_OF_LIGHT;
-						if (vel_fac < lineWidth && ((i != j && ispec0 == ispec) || (ispec0 != ispec)) )
-							mols[ispec0].rad_trans[i].add_overlapped_line(ispec, j, profile_shape(vel_fac));
+		if (modelPhysPars::nSpecies == 1) {
+			for (size_t i = 0; i < mols[0].rad_trans.size(); i++) {
+				const double nu_delim = SPEED_OF_LIGHT / mols[0].rad_trans[i].nu;
+				for (size_t j = i; j < mols[0].rad_trans.size(); j++) {
+					vel_fac = fabs(mols[0].rad_trans[i].nu - mols[0].rad_trans[j].nu) * nu_delim;
+					if (vel_fac < lineWidth && i != j)
+						mols[0].rad_trans[i].add_overlapped_line(0, j, profile_shape(vel_fac));
+						mols[0].rad_trans[j].add_overlapped_line(0, i, profile_shape(vel_fac));
+				}
+			}
+		} else {
+			for (size_t ispec0 = 0; ispec0 < modelPhysPars::nSpecies; ispec0++) {
+				for (size_t ispec = ispec0; ispec < modelPhysPars::nSpecies; ispec++) {
+					for (size_t i = 0; i < mols[ispec0].rad_trans.size(); i++) {
+						const double nu_delim = SPEED_OF_LIGHT / mols[ispec0].rad_trans[i].nu;
+						for (size_t j = 0; j < mols[ispec].rad_trans.size(); j++) {
+							vel_fac = fabs(mols[ispec0].rad_trans[i].nu - mols[ispec].rad_trans[j].nu) * nu_delim;
+							if ( vel_fac < lineWidth && ((i != j && ispec0 == ispec) || (ispec0 != ispec)) )
+								mols[ispec0].rad_trans[i].add_overlapped_line(ispec, j, profile_shape(vel_fac));
+								mols[ispec].rad_trans[j].add_overlapped_line(ispec0, i, profile_shape(vel_fac));
+						}
 					}
 				}
 			}
