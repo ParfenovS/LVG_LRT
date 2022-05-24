@@ -288,9 +288,10 @@ protected:
 				const double nu_delim = SPEED_OF_LIGHT / mols[0].rad_trans[i].nu;
 				for (size_t j = i; j < mols[0].rad_trans.size(); j++) {
 					vel_fac = fabs(mols[0].rad_trans[i].nu - mols[0].rad_trans[j].nu) * nu_delim;
-					if (vel_fac < lineWidth && i != j)
+					if (vel_fac < lineWidth && i != j) {
 						mols[0].rad_trans[i].add_overlapped_line(0, j, profile_shape(vel_fac));
 						mols[0].rad_trans[j].add_overlapped_line(0, i, profile_shape(vel_fac));
+					}
 				}
 			}
 		} else {
@@ -300,9 +301,10 @@ protected:
 						const double nu_delim = SPEED_OF_LIGHT / mols[ispec0].rad_trans[i].nu;
 						for (size_t j = 0; j < mols[ispec].rad_trans.size(); j++) {
 							vel_fac = fabs(mols[ispec0].rad_trans[i].nu - mols[ispec].rad_trans[j].nu) * nu_delim;
-							if ( vel_fac < lineWidth && ((i != j && ispec0 == ispec) || (ispec0 != ispec)) )
+							if ( vel_fac < lineWidth && ((i != j && ispec0 == ispec) || (ispec0 != ispec)) ) {
 								mols[ispec0].rad_trans[i].add_overlapped_line(ispec, j, profile_shape(vel_fac));
 								mols[ispec].rad_trans[j].add_overlapped_line(ispec0, i, profile_shape(vel_fac));
+							}
 						}
 					}
 				}
