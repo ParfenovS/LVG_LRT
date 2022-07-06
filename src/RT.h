@@ -463,6 +463,7 @@ public:
 		this->read_parameters(cin);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
+		minimum_tau = 1.0;
 	}
 
 	virtual ~RT()
