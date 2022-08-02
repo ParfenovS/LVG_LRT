@@ -14,7 +14,7 @@ inline double planck_function(const double & T, const double & nu)
 {
     constexpr double inv_squared_c = 2. / (SPEED_OF_LIGHT * SPEED_OF_LIGHT);
     const double exp_factor = (PLANK_CONSTANT * nu) / (BOLTZMANN_CONSTANT * T);
-    if (exp_factor <= 1.e-3 || T < 1.e-9) return (nu*nu*inv_squared_c) * BOLTZMANN_CONSTANT * T;
+    if (exp_factor <= 1.e-3 || T < 1.e-30) return (nu*nu*inv_squared_c) * BOLTZMANN_CONSTANT * T;
     if (exp_factor > 100) return PLANK_CONSTANT * (nu*nu*nu*inv_squared_c) * exp(- exp_factor);
     return PLANK_CONSTANT * (nu*nu*nu*inv_squared_c) / ( exp(exp_factor) - 1.0 );
 }
