@@ -24,7 +24,7 @@
 #define USE_PARTITION_FUNCTIONS_RATIO false             // if true then the sum of populations will not be equal to 1.0 but will be equal to the ratio of full and partial partition functions (see Sobolev & Deguchi 1994); the full partition function is defined below
 //
 #define PARTITION_FUNCTION {1.0}
-//#define PARTITION_FUNCTION {(0.64 * pow(modelPhysPars::Tks, 1.5))}          // CH3OH full partition rotational function (this is an approximation based on the data from CDMS database)
+//#define PARTITION_FUNCTION {(0.2531 * pow(modelPhysPars::Tks, 1.8395))}          // CH3OH full partition rotational function (this is an approximation based on the data from JPL database in the temperature range from 75 to 300 K)
 //#define PARTITION_FUNCTION {(0.167 * pow(modelPhysPars::Tks, 1.92))}        // 13CH3OH full partition rotational function
 //#define PARTITION_FUNCTION {(0.38 * pow(modelPhysPars::Tks, 1.76))}         // H2CO full partition rotational function
 //#define PARTITION_FUNCTION {(0.03087 * pow(modelPhysPars::Tks, 1.48437))}   // HDO full partition rotational function (this is an approximation based on the data from JPL database)
