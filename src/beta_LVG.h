@@ -148,7 +148,7 @@ public:
 		sig = 1.0e00 / beamH - 1.0e00;					// equation A6 from Langer & Watson 1984
 		oPlusSigDiv3 = 1.e0 + sig / 3.e0;
 		tauCutOff = pow((24.*DBL_EPSILON), 0.25); 	// taken from LIME code (Brinch & Hogerheijde 2010)
-		tau_min = max(MIN_TAU, -705 * (sig + 1));	// MIN_TAU is defined in hiddenParameters.h
+		tau_min = max(MIN_TAU, -705 * (sig + 1));	// MIN_TAU is defined in hiddenParameters.h, the limit is set to avoid an overflow in integrand_for_cubature
 		tau_max = 100. * max(1., 1. + sig); 		// this optical depth limit is consistent with equation A.6 from Castor 1970
 		if (fabs(sig) >= (100.*DBL_EPSILON)) { 		// the case with beaming;
 			precalculate_beta();
