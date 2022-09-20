@@ -391,7 +391,7 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			const double var_under_relax_fac = 1.0 / (ceil(fabs(minimum_tau)));
+			const double var_under_relax_fac = 1.0 / (ceil(fabs(PSI_FACTOR * minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
 				mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
