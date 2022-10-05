@@ -329,6 +329,7 @@ public:
 					double pops_sum = 0.0;
 					for (size_t i = mols[ispec].levels.size(); i-- > 1; ) {
 						pop[ispec][i] = mols[ispec].levels[i].pop + pop[ispec][i];
+						if (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations - 1) pop[ispec][i] = fma(dpop_dt[ispec][i], h, pop[ispec][i]); // predictor
 						pops_sum += pop[ispec][i];
 					}
 					pop[ispec][0] = this->partition_function_ratio[ispec] - pops_sum;
