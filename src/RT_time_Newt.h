@@ -329,6 +329,7 @@ public:
 					double pops_sum = 0.0;
 					for (size_t i = mols[ispec].levels.size(); i-- > 1; ) {
 						pop[ispec][i] = mols[ispec].levels[i].pop + pop[ispec][i];
+						if (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations - 1) pop[ispec][i] = fma(dpop_dt[ispec][i], h, pop[ispec][i]); // predictor
 						pops_sum += pop[ispec][i];
 					}
 					pop[ispec][0] = this->partition_function_ratio[ispec] - pops_sum;
@@ -397,8 +398,6 @@ public:
 							double temp_var = oldpops_time[ispec][i][0];
 							binpopfile.write(reinterpret_cast<const char*>(&temp_var), sizeof(double));
 						}
-						// predictor
-						if (F_norm > MAX_DpopsDt_EPS && ntimesteps < maxNumberOfIterations) mols[ispec].levels[i].pop = fma(dpop_dt[ispec][i], h, mols[ispec].levels[i].pop);
 					}
 				}
 				rn = h / h_old;
