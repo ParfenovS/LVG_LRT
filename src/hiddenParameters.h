@@ -9,8 +9,6 @@
 #define Ng_order 2                                      // the order of Ng acceleration
 #define Ng_start (Ng_order + 1)                         // the iteration number from which Ng acceleration will be switched on
 #define DoNg true                                       // whether to use Ng acceleration
-#define MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX -1.0       // the underrelaxation will be used if there is tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX
-#define PSI_FACTOR 1.6                                  // the factor used to increase the effect of underrelaxation
 #define MAX_LOCAL_ACCURACY 1.e-12                       // maximum relative local error used at each step of integration over time
 #define MAX_NUM_INNER_STEPS 10000                       // maximum number of local iterations to achive LOCAL_ACCURACY
 #define INITIAL_TIME_STEP 1.e-2                         // the initial value of the time step used for integration over time, [s]
