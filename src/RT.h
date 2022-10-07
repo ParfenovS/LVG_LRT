@@ -191,7 +191,7 @@ protected:
 		mol->rad_trans[i].tau *= HC4PI;
 		mol->rad_trans[i].tau += mol->rad_trans[i].taud_in;
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
-		if (mol->rad_trans[i].tau < MAX_TAU_FOR_TRANSITIONS_TO_UNDERELAX && mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
+		if (mol->rad_trans[i].tau < (-1. / beamH) && mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 	}
 	
 	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S)		//computes mean intensity, source function, escape probability, and their product for radiative transition i
@@ -391,7 +391,8 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			const double var_under_relax_fac = 1.0 / (ceil(fabs(PSI_FACTOR * minimum_tau)));
+			double var_under_relax_fac = 1.0;
+			if (minimum_tau < (-1. / beamH)) var_under_relax_fac = 1.0 / (ceil(fabs(beamH * minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
 				mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
