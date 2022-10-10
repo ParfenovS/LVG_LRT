@@ -315,7 +315,7 @@ public:
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) update_external_emission(time + h, &mols[ispec]);
 			if (USE_PREDICTOR) {
 				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-					double ispecF_norm = populate_matrix_vector(A[ispec], pop[ispec], Jac[ispec], LVG_beta, oldpops_time[ispec], BDF_coeffs, h, dpop_dt[ispec], &mols[ispec]);
+					populate_matrix_vector(A[ispec], pop[ispec], Jac[ispec], LVG_beta, oldpops_time[ispec], BDF_coeffs, h, dpop_dt[ispec], &mols[ispec]);
 				}
 				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) mols[ispec].levels[i].pop = fma(dpop_dt[ispec][i], h, mols[ispec].levels[i].pop);
