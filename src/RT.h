@@ -194,10 +194,11 @@ protected:
 		if (mol->rad_trans[i].tau < (-1. / beamH) && mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 	}
 	
-	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S)		//computes mean intensity, source function, escape probability, and their product for radiative transition i
+	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S, double & out_kabs)		//computes mean intensity, source function, escape probability, and their product, absorption coeff for radiative transition i
 	{ // see also equation for Jav in Appendix A of Sobolev et al. 1997
 		const double emiss = emiss_coeff(i, mol);
 		const double kabs = abs_coeff(i, mol);
+		out_kabs = kabs;
 
 		beta = 1.0e00; 		// escape probability = beta(tau) -> 1 for tau -> 0.0
 		beta_S = 0.0e00; 		// (1 - beta) * source function;
