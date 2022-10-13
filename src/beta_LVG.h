@@ -38,11 +38,11 @@ private:
 	{
 		fdata_struct fdata = {sig, tau};
 		const double x_min[1] = {0.};
-        const double x_max[1] = {1.};
-        double integ_res[1];
-        double integ_err[1];
-        int integration_success = 0;
-        integration_success = hcubature(1, integrand_for_cubature, &fdata, 1, x_min, x_max, 100000000, 1.e-60, BETA_ACCURACY, ERROR_INDIVIDUAL, integ_res, integ_err);
+		const double x_max[1] = {1.};
+		double integ_res[1];
+		double integ_err[1];
+		int integration_success = 0;
+		integration_success = hcubature(1, integrand_for_cubature, &fdata, 1, x_min, x_max, 100000000, 1.e-60, BETA_ACCURACY, ERROR_INDIVIDUAL, integ_res, integ_err);
 		if (integration_success != 0) throw runtime_error("integration for escape probability has failed");
 		return integ_res[0];
 	}
@@ -100,26 +100,27 @@ private:
 		else return exp(spline_pos.akima_eval(tau));
 	}
 
-	double tauDbetaDtau_noBeam(const double & tau)			// = (tau * derivative of beta on tau); without beaming
+	double DbetaDtau_noBeam(const double & tau)			// = derivative of beta on tau; without beaming
 	{
-		if (fabs(tau) < tauCutOff) return (tau * (1. / 3.) - 0.5) * tau;
+		if (fabs(tau) < tauCutOff) return tau * (1. / 3.) - 0.5;
 		const double expTau = exp(-tau);
-		return expTau - (1. - expTau)/tau;
+		const double inv_tau = 1 / tau;
+		return (expTau - (1. - expTau) * inv_tau ) * inv_tau;
 	}
 
-	double tauDbetaDtau_Beam(const double & tau)			// = (tau * derivative of beta on tau); with beaming
+	double DbetaDtau_Beam(const double & tau)			// = derivative of beta on tau; with beaming
 	{
-		if (tau > tau_max) return  - 1. / tau * oPlusSigDiv3; // see equation A.6 from Castor 1970	
-		if (tau < 0.0) return tau * exp(spline_neg.akima_eval(tau)) * spline_neg.akima_eval_deriv(tau);
-		else return tau * exp(spline_pos.akima_eval(tau)) * spline_pos.akima_eval_deriv(tau);
+		if (tau > tau_max) return  - 1. / (tau * tau) * oPlusSigDiv3; // see equation A.6 from Castor 1970	
+		if (tau < 0.0) return exp(spline_neg.akima_eval(tau)) * spline_neg.akima_eval_deriv(tau);
+		else return exp(spline_pos.akima_eval(tau)) * spline_pos.akima_eval_deriv(tau);
 	}
 
 public:
 
 	std::function<double(const double &)> beta; 			// function that returns LVG escape probability with or without beaming
-	std::function<double(const double &)> tauDbetaDtau; 	// function that returns (tau * derivative of beta on tau) with or without beaming
+	std::function<double(const double &)> DbetaDtau; 	// function that returns derivative of beta on tau with or without beaming
 	//double (*beta)(const double &);
-	//double (*tauDbetaDtau)(const double &);
+	//double (*DbetaDtau)(const double &);
 
 	double betaHII_LOS(const double & taui, const double & beamH)			// LVG escape probability for the HII region backgroung radiation in the case if the HII region is on the line of sight, see Appendix A in Sobolev et al. 1997
 	{
@@ -127,10 +128,10 @@ public:
 		return beta_noBeam(tau);
 	}
 
-	double tauDbetaHIIDtau_LOS(const double & taui, const double & beamH)			// (tau *dbeta/dtau) for the HII region backgroung radiation in the case if the HII region is on the line of sight, see Appendix A in Sobolev et al. 1997
+	double DbetaHIIDtau_LOS(const double & taui, const double & beamH)			// dbeta/dtau for the HII region backgroung radiation in the case if the HII region is on the line of sight, see Appendix A in Sobolev et al. 1997
 	{
 		const double tau = taui * beamH;
-		return tauDbetaDtau_noBeam(tau);
+		return DbetaDtau_noBeam(tau);
 	}
 
 	double betaHII_pump(const double & tau, const double & beamH)			// LVG escape probability for the HII region backgroung radiation in the case if the HII region is not on the line of sight; in a similar manner as in Appendix A from Sobolev et al. 1997
@@ -138,9 +139,9 @@ public:
 		return beta_noBeam(tau);
 	}
 
-	double tauDbetaHIIDtau_pump(const double & tau, const double & beamH)			// (tau *dbeta/dtau) of the LVG escape probability for the HII region backgroung radiation  in the case if the HII region is not on the line of sight; in a similar manner as in Appendix A from Sobolev et al. 1997
+	double DbetaHIIDtau_pump(const double & tau, const double & beamH)			// dbeta/dtau of the LVG escape probability for the HII region backgroung radiation  in the case if the HII region is not on the line of sight; in a similar manner as in Appendix A from Sobolev et al. 1997
 	{
-		return tauDbetaDtau_noBeam(tau);
+		return DbetaDtau_noBeam(tau);
 	}
 
 	beta_LVG(const double & beamH)
@@ -155,20 +156,20 @@ public:
 			beta = [this](const double & tau) -> double {
 				return this->beta_Beam(tau);
 			};
-			tauDbetaDtau = [this](const double & tau) -> double {
-				return this->tauDbetaDtau_Beam(tau);
+			DbetaDtau = [this](const double & tau) -> double {
+				return this->DbetaDtau_Beam(tau);
 			};
 			//beta = &beta_LVG::beta_Beam;
-			//tauDbetaDtau = &beta_LVG::tauDbetaDtau_Beam;
+			//DbetaDtau = &beta_LVG::DbetaDtau_Beam;
 		} else { 									//no beaming
 			beta = [this](const double & tau) -> double {
 				return this->beta_noBeam(tau);
 			};
-			tauDbetaDtau = [this](const double & tau) -> double {
-				return this->tauDbetaDtau_noBeam(tau);
+			DbetaDtau = [this](const double & tau) -> double {
+				return this->DbetaDtau_noBeam(tau);
 			};
 			//beta = &beta_LVG::beta_noBeam;
-			//tauDbetaDtau = &beta_LVG::tauDbetaDtau_noBeam;
+			//DbetaDtau = &beta_LVG::DbetaDtau_noBeam;
 		}
 	}
 
