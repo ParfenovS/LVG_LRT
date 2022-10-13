@@ -139,6 +139,7 @@ private:
 	{
 		const size_t & n = mol->levels.size();
 		
+		// A[i * j*n] - rate of transition from j-th to i-th level
 		// Collisional transitions
 		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
 		for (size_t i = 0; i < n; i++) {
@@ -153,10 +154,10 @@ private:
 		}
 		
         // Radiative transitions
-		double temp_var, Sf, beta, Jin;
+		double temp_var, temp_var_Jac, Sf, beta, Jin, kabs;
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 			compute_tau(i, mol);
-			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, Jin);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, Jin, kabs);
             
 			const size_t & up = mol->rad_trans[i].up_level;
 			const size_t & low = mol->rad_trans[i].low_level;
@@ -165,18 +166,57 @@ private:
 			A[up + low*n]  += temp_var;                                   	// A[up][low] += Blu * J
 			A[low + low*n] -= temp_var;    									// A[low][low] -= Blu * J
 
+			double blend_demiss_dnlow = 0.0;								// derivative of emission coefficient on population of the lower level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				blend_demiss_dnlow += (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
+			}
+			double blend_dkabs_dnlow = mol->rad_trans[i].Blu;				// derivative of absorption coefficient on population of the lower level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				blend_dkabs_dnlow += (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
+				blend_dkabs_dnlow -= (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level  && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
+			}
+			double dS_dnlow_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnlow - Sf * blend_dkabs_dnlow);	// derivative of source function on population of the lower level of radiative transition * (1 - beta)
+			if (fabs(kabs) > 0.0) dS_dnlow_beta *= (1 - beta) / kabs;
+			else dS_dnlow_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
+			double dtau_dnlow = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnlow;													// derivative of optical depth on population of the lower level of radiative transition
+			temp_var_Jac = mol->rad_trans[i].Blu * (
+					dS_dnlow_beta + dtau_dnlow * (
+					(mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
+					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
+					(1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.DbetaHIIDtau_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII
+				)
+			);
+			Jac[up + low*n] += temp_var + temp_var_Jac;
+			Jac[low + low*n] -= temp_var - temp_var_Jac;
+
 			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
 			A[low + up*n]  += temp_var;                                   	// A[low][up] += Aul + Bul * J
 			A[up + up*n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
 
-			temp_var = LVG_beta.tauDbetaDtau(mol->rad_trans[i].tau) * (Sf - mol->rad_trans[i].JExt - mol->rad_trans[i].JExtHII);
-
-			Jac[up + low*n]  = A[up + low*n]  - mol->rad_trans[i].Blu * (Jin + temp_var);		// Jac[up][low] -= Blu * J + Blu*tau*DbetaDtau * (S-Jext)
-			Jac[low + up*n]  = A[low + up*n]  - (mol->rad_trans[i].A * (1.- beta) + mol->rad_trans[i].Bul * (Jin + temp_var)); // Jac[low][up] -= (1-beta)*Aul + Bul * J + Bul*tau*DbetaDtau * (S-Jext)
-			Jac[up + up*n]   = A[up + up*n]   + (mol->rad_trans[i].A * (1.- beta) + mol->rad_trans[i].Bul * (Jin + temp_var)); // Jac[up][up] += (1-beta)*Aul + Bul * J + Bul*tau*DbetaDtau * (S-Jext)
-			Jac[low + low*n] = A[low + low*n] + mol->rad_trans[i].Blu * (Jin + temp_var); // Jac[low][low] += Blu * J + Blu*tau*DbetaDtau * (S-Jext)
+			double blend_demiss_dnup = mol->rad_trans[i].A;								// derivative of emission coefficient on population of the upper level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				blend_demiss_dnup += (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
+			}
+			double blend_dkabs_dnup = - mol->rad_trans[i].Bul;				// derivative of absorption coefficient on population of the upper level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				blend_dkabs_dnup += (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
+				blend_dkabs_dnup -= (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level  && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
+			}
+			double dS_dnup_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnup - Sf * blend_dkabs_dnup);	// derivative of source function on population of the upper level of radiative transition * (1 - beta)
+			if (fabs(kabs) > 0.0) dS_dnup_beta *= (1 - beta) / kabs;
+			else dS_dnup_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
+			double dtau_dnup = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnup;													// derivative of optical depth on population of the upper level of radiative transition
+			temp_var_Jac = mol->rad_trans[i].Bul * (
+					dS_dnup_beta + dtau_dnup * (
+					(mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
+					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
+					(1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.DbetaHIIDtau_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII
+				)
+			);
+			Jac[low + up*n] += temp_var + temp_var_Jac;
+			Jac[up + up*n] -= temp_var - temp_var_Jac;
 		}
-
+		
 		double norm = 0.0;
 		for (size_t i = 0; i < n; i++) {
 			dpop_dt[i] = 0.0;
