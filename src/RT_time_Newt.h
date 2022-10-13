@@ -11,10 +11,11 @@ private:
 		double dummy_S = 0.0;
 		double dummy_beta = 0.0;
 		double dummy_betaS = 0.0;
+		double dummy_kabs = 0.0;
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				compute_tau(i, &mols[ispec]); 		// computing final optical depths that can be used for output
-				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_betaS); 	// computing final mean intensities that can be used for output
+				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_betaS, dummy_kabs); 	// computing final mean intensities that can be used for output
 				compute_Tex(i, &mols[ispec]); 		// computing excitation temperature that can be used for output
 				compute_brightness_temperature(i, time, &mols[ispec]); 	// computing brightness temperature and intensity of the emission
 			}
