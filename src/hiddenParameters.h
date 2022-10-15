@@ -16,8 +16,8 @@
 #define MAX_TIME_STEP 10000.0                           // maximum time step used for itegration over time, [s]
 #define TIME_STEP_DECREASE_FAC 0.625                    // the time step can be decreased by this factor
 #define TIME_STEP_INCREASE_FAC 1.6                      // the time step can be increased by this factor
-#define MON_FUN_LOWER_LIMIT 5.e-3                       // the lower limit for the monitor function used to control the time step for integration over time (see Jannelli & Fazio 2006, Journal of Computational and Applied Mathematics, 191, 246)
-#define MON_FUN_UPPER_LIMIT 5.e-2                       // the upper limit for the monitor function used to control the time step for integration over time#define TIME_INTEGRATION_OF_KINETIC_EQUATIONS false     // if false the code will solve statistical equilibrium equations; if true the code will integrate kinetic equations for populations over time
+#define MON_FUN_LOWER_LIMIT 1.e-3                       // the lower limit for the monitor function used to control the time step for integration over time (see Jannelli & Fazio 2006, Journal of Computational and Applied Mathematics, 191, 246)
+#define MON_FUN_UPPER_LIMIT 1.e-2                       // the upper limit for the monitor function used to control the time step for integration over time#define TIME_INTEGRATION_OF_KINETIC_EQUATIONS false     // if false the code will solve statistical equilibrium equations; if true the code will integrate kinetic equations for populations over time
 #define USE_PREDICTOR true                              // use explicit Euler method as a predictor for integration over time
 #define TIME_INTEGRATION_OF_KINETIC_EQUATIONS false     // if false the code will solve statistical equilibrium equations; if true the code will integrate kinetic equations for populations over time
 #define EXTRAPOLATE_COLL_RATES_AS_SQRT_OF_TK false      // if true then collisional rates will be extrapolated as a square root of the gas temperature
