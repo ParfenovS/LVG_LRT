@@ -177,10 +177,10 @@ private:
 				blend_dkabs_dnlow -= (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level  && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
 			}
 			double dS_dnlow_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnlow - Sf * blend_dkabs_dnlow);	// derivative of source function on population of the lower level of radiative transition * (1 - beta)
-			if (fabs(kabs) > 0.0) dS_dnlow_beta *= (1 - beta) / kabs;
+			if (fabs(kabs) > 0.0) dS_dnlow_beta *= (1. - beta) / kabs;
 			else dS_dnlow_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
 			double dtau_dnlow = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnlow;													// derivative of optical depth on population of the lower level of radiative transition
-			temp_var_Jac = mol->rad_trans[i].Blu * (
+			temp_var_Jac = mol->levels[low].pop * mol->rad_trans[i].Blu * (
 					dS_dnlow_beta + dtau_dnlow * (
 					(mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
 					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
@@ -188,7 +188,7 @@ private:
 				)
 			);
 			Jac[up + low*n] += temp_var + temp_var_Jac;
-			Jac[low + low*n] -= temp_var - temp_var_Jac;
+			Jac[low + low*n] -= (temp_var + temp_var_Jac);
 
 			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
 			A[low + up*n]  += temp_var;                                   	// A[low][up] += Aul + Bul * J
@@ -204,10 +204,10 @@ private:
 				blend_dkabs_dnup -= (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level  && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
 			}
 			double dS_dnup_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnup - Sf * blend_dkabs_dnup);	// derivative of source function on population of the upper level of radiative transition * (1 - beta)
-			if (fabs(kabs) > 0.0) dS_dnup_beta *= (1 - beta) / kabs;
+			if (fabs(kabs) > 0.0) dS_dnup_beta *= (1. - beta) / kabs;
 			else dS_dnup_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
 			double dtau_dnup = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnup;													// derivative of optical depth on population of the upper level of radiative transition
-			temp_var_Jac = mol->rad_trans[i].Bul * (
+			temp_var_Jac = mol->levels[up].pop * mol->rad_trans[i].Bul * (
 					dS_dnup_beta + dtau_dnup * (
 					(mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
 					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
@@ -215,22 +215,24 @@ private:
 				)
 			);
 			Jac[low + up*n] += temp_var + temp_var_Jac;
-			Jac[up + up*n] -= temp_var - temp_var_Jac;
+			Jac[up + up*n] -= (temp_var + temp_var_Jac);
 		}
 		
 		double norm = 0.0;
-		for (size_t i = 0; i < n; i++) {
+		double pops_sum = 0.0;
+		for (size_t i = n; i-- > 0; ) {
 			dpop_dt[i] = 0.0;
-			for (size_t j = 0; j < n; j++) {
+			for (size_t j = n; j-- > 0; ) {
 				dpop_dt[i] += A[i + j*n] * mol->levels[j].pop;
-				A[i + j*n] = h * Jac[i + j*n];
+				A[i + j*n] = Jac[i + j*n];
 			}
 			norm += dpop_dt[i] * dpop_dt[i];
-			B[i] = BDF_coeffs[0] * mol->levels[i].pop + BDF_coeffs[1] * oldpops[i][0] + BDF_coeffs[2] * oldpops[i][1] - h * dpop_dt[i];		// BDF method formula
-			A[i + i*n] -= BDF_coeffs[0];
+			B[i] = (BDF_coeffs[0] * mol->levels[i].pop + BDF_coeffs[1] * oldpops[i][0] + BDF_coeffs[2] * oldpops[i][1]) / h - dpop_dt[i];		// BDF method formula
+			A[i + i*n] -= BDF_coeffs[0] / h;
 			//A[0 + i*n] = 1.0;	// A[0][i] = 1.0 - the equation for the first level is replaced by the particle number conservation law, i.e. the sum of populations should be = partition functions ratio or = 1
+			pops_sum += mol->levels[i].pop;
 		}
-		//B[0] = this->partition_function_ratio[mol->idspec]; // the sum of populations should be = partition functions ratio or = 1
+		//B[0] = this->partition_function_ratio[mol->idspec] - pops_sum; // the sum of populations should be = partition functions ratio or = 1
 		return sqrt(norm);
 	}
 
@@ -354,7 +356,7 @@ public:
 			size_t solveStatEqSuccess = 0;
 			double MaxRPopDiff_at_prev_iter = 0.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) update_external_emission(time + h, &mols[ispec]);
-			if (USE_PREDICTOR) {
+			if (USE_PREDICTOR && ntimesteps > 0) {
 				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 					populate_matrix_vector(A[ispec], pop[ispec], Jac[ispec], LVG_beta, oldpops_time[ispec], BDF_coeffs, h, dpop_dt[ispec], &mols[ispec]);
 				}
@@ -388,7 +390,7 @@ public:
 				if (solveStatEqSuccess == 0 && cerr_output_iter_progress) {
 					cerr << iter_in << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " << levelWithMaxRPopDiff << endl;
 				}
-				if ( there_were_bad_levels || solveStatEqSuccess != 0 || fabs(MaxRPopDiff_at_prev_iter - MaxRPopDiff) / MaxRPopDiff < 0.01) {
+				if ( there_were_bad_levels || solveStatEqSuccess != 0 || fabs(MaxRPopDiff_at_prev_iter - MaxRPopDiff) / MaxRPopDiff < MAX_LOCAL_ACCURACY) {
 					solution_failed = true;
 					break;
 				}
