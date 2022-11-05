@@ -459,6 +459,8 @@ public:
 
 		if (ntimesteps == maxNumberOfIterations) cerr << "#warning: maximum number of time steps has been exceeded " << "n= " << F_norm << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 		
+		prepare_results_for_output(LVG_beta, time);
+		
 		return 0;
 	}
 
