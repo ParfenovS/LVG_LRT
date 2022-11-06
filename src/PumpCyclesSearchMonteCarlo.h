@@ -130,6 +130,8 @@ private:
 				cycle.lms.push_back(k_lev);
 				if (cycles.size() == 0) {
 					cycles.push_back(cycle);
+					cycle.CollDom.clear();
+					cycle.lms.clear();
 					continue;
 				}
 				size_t same_cycle_id = 0;
@@ -151,6 +153,8 @@ private:
 				if (!same_cycle) cycles.push_back(cycle);
 				else cycles[same_cycle_id].cycle_counter += 1;
 			}
+			cycle.CollDom.clear();
+			cycle.lms.clear();
 		}
 
 		// calculate the relative efficiency of the cycle
