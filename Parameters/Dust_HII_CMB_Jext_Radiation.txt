@@ -2,7 +2,7 @@
 0
 # name of file with mean intensity (it can be empty):
 cloudy_spectrum.dat
-# dust emission: J = Wd * (1 - exp(tau0 * (nu/nu0)^p)) * planck_function(Td,nu) (see Sobolev et al. 1997, see van der Walt 2014 for optically thin case)
+# dust emission: J = Wd * (1 - exp(- tau0 * (nu/nu0)^p)) * planck_function(Td,nu) (see Sobolev et al. 1997, see van der Walt 2014 for optically thin case)
 # where Wd - dilution factor, nu0 - frequency [Hz], nu - radiative transition frequency, p - some number, Td - dust temperature [K], inner_dust = 1(0) - there will be (no) dust inside the maser region
 # Wd	tau0	nu0 [Hz]	p	    Td [K]		inner_dust
 0.0     1.0     1.e13		2.0     220         0
@@ -12,7 +12,7 @@ cloudy_spectrum.dat
 0
 # name of file with dust mass absorption coefficient depenedence on wavelength (the first column is wavelength in microns, the second column is mass absorption coefficient in cm^2/g)
 kabs_1e6_no_ice.dat
-# HII region emission: J = WHII * (1-exp(tauHII)) * planck_function(Te,nu), tauHII = (turnFreq/nu)^2 (see van der Walt 2014 and Appendix A from Sobolev et al. 1997)
+# HII region emission: J = WHII * (1-exp(-tauHII)) * planck_function(Te,nu), tauHII = (turnFreq/nu)^2 (see van der Walt 2014 and Appendix A from Sobolev et al. 1997)
 # where WHII - dilution factor, turnFreq - turnover frequency of HII region, Te - electron temperature [K]
 # WHII	turnFreq [Hz]		Te [K]		HII region is centered on the line-of-sight (1) or not (0)
 1.0     15.689e9            10000.0		1
