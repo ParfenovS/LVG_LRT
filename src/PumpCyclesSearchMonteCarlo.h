@@ -15,7 +15,7 @@ private:
 	{
 		size_t cycle_counter = 1;
 		vector<size_t> lms;
-		vector<short> CollDom;
+		vector<bool> CollDom;
 	};
 
 	vector<cycle_class> cycles;			// stores all the found paths from the i_lev to the k_lev levels
@@ -181,7 +181,7 @@ private:
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
-				if (cycles[c].CollDom[m] == 1) cout << "*";
+				if (cycles[c].CollDom[m]) cout << "*";
 				cout << cycles[c].lms[m] + 1 << "\t";
 			}
 			cout << "\n";
@@ -191,7 +191,7 @@ private:
 public:
 
 	vector<vector <double> > T;							// net population flow rates; should be initialized from outside the class; allocated with compute_T function in molModel.h 
-	vector<vector <short> >isItCollisionalDominated;
+	vector<vector <bool> >isItCollisionalDominated;
 
 	void pop_flow(const size_t &i, const size_t &k)		// main function that performs the search of paths or cycles from i to k levels; i and k begin from 1
 	{
