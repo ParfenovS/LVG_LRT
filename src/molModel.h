@@ -124,7 +124,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 		C_counter.clear();
 	}
 
-	void compute_T(vector <vector <double> > & T, vector <vector <short> > & isItCollisionalDominated) // compute net population flow rates (see e.g. Sobolev & Deguchi 1994) and return it in T; should be called before pop_flow (declared in MonteCarlo.h);
+	void compute_T(vector <vector <double> > & T, vector <vector <bool> > & isItCollisionalDominated) // compute net population flow rates (see e.g. Sobolev & Deguchi 1994) and return it in T; should be called before pop_flow (declared in MonteCarlo.h);
 	{
 		double TC;
 		if (T.size() < levels.size()) {
@@ -138,7 +138,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 			for (size_t i = 0; i < levels.size(); i++) {
 				for (size_t j = 0; j < levels.size(); j++) {
 					T[i][j] = 0.0;
-					isItCollisionalDominated[i][j] = 0;
+					isItCollisionalDominated[i][j] = false;
 				}
 			}
 		}
@@ -154,7 +154,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 			for (size_t j = 0; j < levels.size(); j++) {
 				TC = levels[i].pop*coll_trans[i][j] - levels[j].pop*coll_trans[j][i];
 				T[i][j] += TC;
-				if (fabs(TC) > fabs(0.9*T[i][j])) isItCollisionalDominated[i][j] = 1; //check whether the transition is collision dominated
+				if (fabs(TC) > fabs(0.9*T[i][j])) isItCollisionalDominated[i][j] = true; //check whether the transition is collision dominated
 			}
 			T[i][i] = 0.0;
 		}
