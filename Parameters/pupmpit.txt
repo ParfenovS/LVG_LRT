@@ -1,16 +1,18 @@
-# Name of file with physical conditions:
+# Name of input file with physical conditions:
 Parameters/PhysicalConditions.txt
-# Name of file with popualtions:
+# Name of output file with data that can be used to calculate net population flow rates due to radiative transitions (can be empty):
+Results/pops_flow_rates.txt
+# Name of input file with popualtions:
 Results/pops_ph2co.txt
 Results/pops_oh2co.txt
-# Name of file with mean intensities:
+# Name of input file with mean intensities:
 Results/J_emission.txt
-# Name of LAMDA file with molecular data:
+# Name of input LAMDA file with molecular data:
 ph2co-h2.dat
 oh2co-h2.dat
 # Random seed (if negative then the seed is a current time)
 1
-# Number of cycles to search
-1000
+# Number of tries to search cycles
+10000
 # Close levels? (0 - no, 1 -yes)
 1
