@@ -1,13 +1,13 @@
 # Initial solution:
 # 0 - from file; 1 - optically thin; 2 - LTE
 2
-# Name of file with initial solution (can be empty):
+# Name of input file with initial solution (can be empty):
 Results/pops_ph2co.txt
 Results/pops_oh2co.txt
-# Name of file with final solution (can be empty):
+# Name of output file with final solution (can be empty):
 Results/pops_ph2co.txt
 Results/pops_oh2co.txt
-# Name of LAMDA file with molecular data:
+# Name of input LAMDA file with molecular data:
 ph2co-h2.dat
 oh2co-h2.dat
 # Stopping criteria:
