@@ -17,8 +17,14 @@ int main(int argc, char* argv[])
 	vector <string> filename_pops;
 	string filename_J;
 	string phys_cond;
+	string flow_rates_file;
 	int seed, close_levels;
-	size_t num_of_cycles;
+	size_t num_of_tries;
+
+	if (argc != 4) {
+		cout << "Usage:\n# pupmpit.exe molid low_level up_level\nwhere molid - 1-based id of molecule; low_level, up_level - 1-based ids of lower and upper transition levels" << endl;
+		return 0;
+	}
 
 	{
 		ifstream fin;
@@ -36,6 +42,10 @@ int main(int argc, char* argv[])
 		fin_phys.open(phys_cond, ios::in);
 		initialize_modelPhysPars(fin_phys); 	// read physical conditions from file
 		fin_phys.close();
+
+		getline(fin, str);
+		getline(fin, str);
+		flow_rates_file = trim(str);
 
 		getline(fin, str);
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
@@ -57,7 +67,7 @@ int main(int argc, char* argv[])
 		seed = readline<int>(fin);
 
 		getline(fin, str);
-		num_of_cycles = readline<size_t>(fin);
+		num_of_tries = readline<size_t>(fin);
 
 		getline(fin, str);
 		close_levels = readline<int>(fin);
@@ -83,7 +93,7 @@ int main(int argc, char* argv[])
 	}
 	size_t final_level = atoi(argv[3]);
 
-	MonteCarloSearchCycles MC(seed, num_of_cycles, close_levels);
+	MonteCarloSearchCycles MC(seed, num_of_tries, close_levels);
 	for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 		molModel *mol = new molModel(ispec);
 		{
@@ -91,7 +101,7 @@ int main(int argc, char* argv[])
 			molReader.read_data(filename_lamda[ispec], filename_pops[ispec], filename_J, mol); 	// read file with molecular data in LAMDA format
 		}
 		if (ispec == molSpecies) {
-			mol->compute_T(MC.T, MC.isItCollisionalDominated);	// compute net population flow rates (see e.g. Sobolev & Deguchi 1994)
+			mol->compute_T(MC.T, MC.isItCollisionalDominated, flow_rates_file);	// compute net population flow rates (see e.g. Sobolev & Deguchi 1994)
 			delete mol;
 			break;
 		}
