@@ -25,7 +25,7 @@ private:
 	size_t i_lev;						// initial level initialized in pop_flow()
 	size_t k_lev;						// final level initialized in pop_flow()
 	unsigned int seed;					// random seed
-	size_t num_of_cycles;				// number of cycles to search for
+	size_t num_of_tries;				// number of tries to search cycles
 	bool close_levels;					// = true - search for elementary cycles; = false - search for cycles with recursion
 	size_t MAX_STEPS;					// maximum allowed number of steps in a path; calculated in compute_P();
 
@@ -100,7 +100,7 @@ private:
 		compute_P();
 		//T.clear();
 
-		for (size_t c = 0; c < num_of_cycles; c++) {
+		for (size_t c = 0; c < num_of_tries; c++) {
 			steps = 0;
 			cycle_class cycle;
 			lm = i_lev;
@@ -206,18 +206,18 @@ public:
 	{
 		seed = static_cast<unsigned int>(time(NULL));
 		close_levels = true;
-		num_of_cycles = 500;
+		num_of_tries = 500;
 		MAX_STEPS = 1;
 		k_lev = 0;
 		i_lev = 0;
 	}
 
-	MonteCarloSearchCycles(const int &seed, const size_t &num_of_cycles, const int &close_levels)
+	MonteCarloSearchCycles(const int &seed, const size_t &num_of_tries, const int &close_levels)
 	{
 		if (seed < 0) this->seed = static_cast<unsigned int>(time(NULL));
 		else this->seed =seed;
-		if (num_of_cycles<=0) this->num_of_cycles = 500;
-		else this->num_of_cycles = num_of_cycles;
+		if (num_of_tries<=0) this->num_of_tries = 500;
+		else this->num_of_tries = num_of_tries;
 		if (close_levels == 0) this->close_levels = false;
 		else this->close_levels = true;
 		MAX_STEPS = 1;
