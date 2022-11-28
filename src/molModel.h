@@ -124,9 +124,17 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 		C_counter.clear();
 	}
 
-	void compute_T(vector <vector <double> > & T, vector <vector <bool> > & isItCollisionalDominated) // compute net population flow rates (see e.g. Sobolev & Deguchi 1994) and return it in T; should be called before pop_flow (declared in MonteCarlo.h);
+	void compute_T(vector <vector <double> > & T, vector <vector <bool> > & isItCollisionalDominated, string filename) // compute net population flow rates (see e.g. Sobolev & Deguchi 1994) and return it in T; should be called before pop_flow (declared in MonteCarlo.h);
 	{
+		FILE *fout;
 		double TC;
+
+		if (filename.length() > 1) {
+			fout = fopen(filename.c_str(), "w");
+			if (fout == NULL) throw runtime_error("can't open file to save pops flow rates");
+			fprintf(fout, "#molid \t transid \t up->low \t freq., GHz \t pop_up * (A + Bul*J) - pop_low * Blu*J \n");
+		}
+
 		if (T.size() < levels.size()) {
 			T.resize(levels.size());
 			isItCollisionalDominated.resize(levels.size());
@@ -148,6 +156,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 			const size_t & low = rad_trans[i].low_level;
 			T[up][low] = levels[up].pop*(rad_trans[i].A + rad_trans[i].Bul*rad_trans[i].J) - levels[low].pop*rad_trans[i].Blu*rad_trans[i].J;
 			T[low][up] = - T[up][low];
+			if (filename.length() > 1) fprintf(fout, "%zu \t %zu \t %zu -> %zu \t %le * (%le + %le) - %le * %le \n", this->idspec+1, rad_trans[i].trans_id, up+1, low+1, rad_trans[i].nu * 1.e-9, levels[up].pop, rad_trans[i].A, rad_trans[i].Bul*rad_trans[i].J, levels[low].pop, rad_trans[i].Blu*rad_trans[i].J);
 		}
 		
 		for (size_t i = 0; i < levels.size(); i++) {
@@ -158,7 +167,8 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 			}
 			T[i][i] = 0.0;
 		}
-		
+
+		fclose(fout);
 	}
 
 	molModel() noexcept
