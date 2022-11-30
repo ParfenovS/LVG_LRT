@@ -107,27 +107,27 @@ private:
 			lm1 = lm;
 			P = P0;
 			A = compute_A(lm);
-			while (A > 0.0 && steps < MAX_STEPS && lm != k_lev) {
+			while (A > 0.0 && steps < MAX_STEPS) {
 				cycle.lms.push_back(lm);
 				R = dist(gen);							// generating random R
 				lm1 = compare(A, R, lm); 				// searching for the next level (lm1) such that sum(q=1,lm1-1)Plmq < AR < sum(q=1,lm1)Plmq; the transition is from lm to lm1 levels
 				if (close_levels) close_level(lm);		// closing the current level
 				cycle.CollDom.push_back(isItCollisionalDominated[lm][lm1]);
+				if (lm == k_lev) break;
 				lm = lm1;
 				steps += 1;
 				A = compute_A(lm);
 				if (A <= 0.0) {							// the path was not successfull
 					cycle.CollDom.clear();
 					cycle.lms.clear();
+					if (lm == k_lev) cout << "A<=0 for the final level; maybe one need to consider another final level\n";
 					P = P0;
 					lm = i_lev;
 					A = compute_A(lm);
 				}
 			}
-			if (lm1 == k_lev && A <= 0.0) cout << "A<=0 for the final level; maybe one need to consider another final level\n";
 			if (steps == MAX_STEPS)	cerr << " Maximum number of steps in pop_flow() has been reached\n";
 			if (steps != MAX_STEPS && lm == k_lev) {
-				cycle.lms.push_back(k_lev);
 				if (cycles.size() == 0) {
 					cycles.push_back(cycle);
 					cycle.CollDom.clear();
