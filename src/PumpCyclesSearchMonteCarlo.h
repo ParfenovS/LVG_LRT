@@ -165,7 +165,7 @@ private:
 			fR1[c] = 1;
 			for (size_t m = 1; m < cycles[c].lms.size(); m++)
 			{
-				fR1[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]] / 2.;
+				fR1[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]] * 0.5;
 			}
 			fR1[c] *= T[k_lev][i_lev];
 		}
