@@ -80,10 +80,11 @@ private:
 	{
 		double sumP1 = 0.0; 
 		double sumP2 = 0.0;
+		const double AR = A * R;
 		for (size_t q = 0; q < P.size(); q++) {
 			sumP2 += P[lm][q];
-			//if ( ((sumP1 < (A*R) && (A*R) < sumP2)) || ((sumP2 < (A*R) && (A*R) < sumP1)) )
-			if ( (sumP1 < (A*R) && (A*R) < sumP2) ) {		
+			//if ( ((sumP1 < AR && AR < sumP2)) || ((sumP2 < AR && AR < sumP1)) )
+			if ( (sumP1 < AR && AR < sumP2) ) {		
 				return q;
 			}
 			sumP1 = sumP2;
