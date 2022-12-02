@@ -120,13 +120,13 @@ private:
 				if (A <= 0.0) {							// the path was not successfull
 					cycle.CollDom.clear();
 					cycle.lms.clear();
-					if (lm == k_lev) cout << "A<=0 for the final level; maybe one need to consider another final level\n";
+					if (lm == k_lev) cout << "# warning: A<=0 for the final level; maybe one need to consider another final level\n";
 					P = P0;
 					lm = i_lev;
 					A = compute_A(lm);
 				}
 			}
-			if (steps == MAX_STEPS)	cerr << " Maximum number of steps in pop_flow() has been reached\n";
+			if (steps == MAX_STEPS)	cerr << "# warning: Maximum number of steps in pop_flow() has been reached\n";
 			if (steps != MAX_STEPS && lm == k_lev) {
 				if (cycles.size() == 0) {
 					cycles.push_back(cycle);
@@ -181,7 +181,7 @@ private:
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
-				if (cycles[c].CollDom[m]) cout << "*";
+				if (cycles[c].CollDom[m] && cycles[c].lms[m] != k_lev) cout << "*";
 				cout << cycles[c].lms[m] + 1 << "\t";
 			}
 			cout << "\n";
