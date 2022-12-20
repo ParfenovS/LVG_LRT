@@ -31,7 +31,7 @@ private:
 
 	void compute_P()					// compute fractions of population flow from all to all levels;
 	{
-		if (P.size()<T.size()) {
+		if (P.size() < T.size()) {
 			P.resize(T.size());
 			for (size_t k = 0; k<T.size(); k++) P[k].resize(T.size());
 			for (size_t i = 0; i < T.size(); i++) {
@@ -46,16 +46,17 @@ private:
 			double y, t;
 //#pragma omp parallel for reduction(+:sumT, c)			//parallelized Kahan summation of population flows (T)
 			for (size_t q = 0; q < T.size(); q++) {
-				y = fabs(T[i][q]) - c; 
+				y = fabs(T[i][q]) - c;
 				t = sumT + y;
 				c = (t - sumT) - y;
 				sumT = t;
 			}
 			sumT = sumT - c;
 
+			sumT = 2. / sumT;
 			for (size_t j = 0; j < T.size(); j++) {
-				P[i][j] = T[i][j] * 2.0 / sumT;
-				if (T[i][j] <= 0.) P[i][j] = 0.0;				 
+				if (T[i][j] <= 0.) P[i][j] = 0.0;
+				else P[i][j] = T[i][j] * sumT;				 
 			}
 		}
 		P[i_lev][k_lev] = 0.0;
@@ -158,16 +159,24 @@ private:
 			cycle.lms.clear();
 		}
 
-		// calculate the relative efficiency of the cycle
-		vector <double> fR1(cycles.size());
+		// calculate the relative efficiency and power of cycles
+		vector <double> fE(cycles.size()); // relative efficiency
+		vector <double> fW(cycles.size());  // power
+
+		double sum_T = 0.0;
+		for (size_t q = 0; q < T.size(); q++) {
+			sum_T += fabs(T[i_lev][q]);
+		}
+		sum_T *= 0.5;
+
 		for (size_t c = 0; c < cycles.size(); c++)
 		{
-			fR1[c] = 1;
+			fE[c] = 1;
 			for (size_t m = 1; m < cycles[c].lms.size(); m++)
 			{
-				fR1[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]] * 0.5;
+				fE[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]];
 			}
-			fR1[c] *= T[k_lev][i_lev];
+			fW[c] = fE[c] * sum_T;
 		}
 
 		// sorting by efficiency
@@ -178,7 +187,7 @@ private:
 		{
 			size_t c = sort_indexes[ic];
 			if (fabs(fR1[c]) < 1.e-30) continue;
-			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fR1[c] << "\n";
+			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c] << "\n";
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
