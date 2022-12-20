@@ -180,13 +180,13 @@ private:
 		}
 
 		// sorting by efficiency
-		vector <size_t> sort_indexes = argsort(fR1);
+		vector <size_t> sort_indexes = argsort(fE);
 
 		// output results
 		for (size_t ic = 0; ic < cycles.size(); ic++)
 		{
 			size_t c = sort_indexes[ic];
-			if (fabs(fR1[c]) < 1.e-30) continue;
+			if (fabs(fE[c]) < 1.e-30) continue;
 			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c] << "\n";
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
