@@ -100,6 +100,7 @@ private:
 		size_t lm1, steps;
 		double A, R;
 		compute_P();
+		bool warning_on_final_level = false;
 		//T.clear();
 
 		for (size_t c = 0; c < num_of_tries; c++) {
@@ -122,7 +123,10 @@ private:
 				if (A <= 0.0) {							// the path was not successfull
 					cycle.CollDom.clear();
 					cycle.lms.clear();
-					if (lm == k_lev) cout << "# warning: A<=0 for the final level; maybe one need to consider another final level\n";
+					if (lm == k_lev && !warning_on_final_level) {
+						cout << "# warning: A<=0 for the final level; maybe one need to consider another final level\n";
+						warning_on_final_level = true;
+					}
 					P = P0;
 					lm = i_lev;
 					A = compute_A(lm);
