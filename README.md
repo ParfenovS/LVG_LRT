@@ -13,7 +13,7 @@ The code reads input model parameters from files in Parameters directory. The in
 To run the code for the maser pumping analysis type in a terminal:
 
 ```
-./pupmpit.exe 1 1 3
+./pupmpit.exe 2 1 2
 ```
 where the first command argument denotes the index of a molecular species; the second and third arguments denote the indexes of, respectively, starting and final energy levels between which one wants to search for pumping cycles (these are usually the lower and upper levels of a maser transition). The molecular species and level indexes begin from 1 and correspond to level indexes given in the input file with spectroscopic data in [LAMDA](https://home.strw.leidenuniv.nl/~moldata/) format. The code will read the input parameters from Parameters directory and the output files produced by LVG_LRT.exe. The output will be into a terminal and will contain the information on found cycles. For each cycle in the output, there will be the number of levels in the cycle, the number of times the code found the cycle (the code searches for cycles with Monte-Carlo method and can encounter the same cycle many times), the relative efficiency and power of the cycle, the list of 1-based level indexes within the cycle.
 
