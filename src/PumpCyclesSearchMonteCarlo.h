@@ -84,7 +84,6 @@ private:
 		const double AR = A * R;
 		for (size_t q = 0; q < P.size(); q++) {
 			sumP2 += P[lm][q];
-			//if ( ((sumP1 < AR && AR < sumP2)) || ((sumP2 < AR && AR < sumP1)) )
 			if ( (sumP1 < AR && AR < sumP2) ) {		
 				return q;
 			}
@@ -101,7 +100,8 @@ private:
 		double A, R;
 		compute_P();
 		bool warning_on_final_level = false;
-		//T.clear();
+		
+		if (compute_A(i_lev) <= 0.0) throw runtime_error("A=0 for initial level, it's impossible to find a cycle");
 
 		for (size_t c = 0; c < num_of_tries; c++) {
 			steps = 0;
