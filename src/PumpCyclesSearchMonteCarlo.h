@@ -199,7 +199,7 @@ private:
 			size_t c = sort_indexes[ic];
 			if (fabs(fE[c]) < 1.e-30) continue;
 			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c];
-			if (cycles[c].A_is_not_positive_for_final_level) cout << " # warning A<=0 for this route";
+			if (cycles[c].A_is_not_positive_for_final_level) cout << " # warning A<=0 for the final level in this route";
 			cout << "\n";
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
