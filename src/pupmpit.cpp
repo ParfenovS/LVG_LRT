@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 			molReader.read_data(filename_lamda[ispec], filename_pops[ispec], filename_J, mol); 	// read file with molecular data in LAMDA format
 		}
 		if (ispec == molSpecies) {
-			mol->compute_T(MC.T, MC.isItCollisionalDominated, flow_rates_file);	// compute net population flow rates (see e.g. Sobolev & Deguchi 1994)
+			mol->compute_V(MC.V, MC.isItCollisionalDominated, flow_rates_file);	// compute net population flow rates (see e.g. Sobolev 1986)
 			delete mol;
 			break;
 		}
