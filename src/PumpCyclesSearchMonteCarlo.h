@@ -31,35 +31,35 @@ private:
 
 	void compute_P()					// compute fractions of population flow from all to all levels;
 	{
-		if (P.size() < T.size()) {
-			P.resize(T.size());
-			for (size_t k = 0; k<T.size(); k++) P[k].resize(T.size());
-			for (size_t i = 0; i < T.size(); i++) {
-				for (size_t j = 0; j < T.size(); j++) {
+		if (P.size() < V.size()) {
+			P.resize(V.size());
+			for (size_t k = 0; k < V.size(); k++) P[k].resize(V.size());
+			for (size_t i = 0; i < V.size(); i++) {
+				for (size_t j = 0; j < V.size(); j++) {
 					P[i][j] = 0.0;
 				}
 			}
 		}
 
-		for (size_t i = 0; i < T.size(); i++) {
-			double sumT = 0.0;
+		for (size_t i = 0; i < V.size(); i++) {
+			double sumV = 0.0;
 			//double y, t, c = 0.0;
-//#pragma omp parallel for reduction(+:sumT, c)			//parallelized Kahan summation of population flows (T)
-			for (size_t q = 0; q < T.size(); q++) {
-				/*if (T[i][q] > 0.0) {
-					y = T[i][q] - c;
-					t = sumT + y;
-					c = (t - sumT) - y;
-					sumT = t;	
+//#pragma omp parallel for reduction(+:sumV, c)			//parallelized Kahan summation of population flows V
+			for (size_t q = 0; q < V.size(); q++) {
+				/*if (V[i][q] > 0.0) {
+					y = V[i][q] - c;
+					t = sumV + y;
+					c = (t - sumV) - y;
+					sumV = t;	
 				}*/
-				if (T[i][q] > 0.0) sumT += T[i][q];
+				if (V[i][q] > 0.0) sumV += V[i][q];
 			}
-			//sumT = sumT - c;
+			//sumV = sumV - c;
 
-			sumT = 1. / sumT;
-			for (size_t j = 0; j < T.size(); j++) {
-				if (T[i][j] <= 0.) P[i][j] = 0.0;
-				else P[i][j] = T[i][j] * sumT;
+			sumV = 1. / sumV;
+			for (size_t j = 0; j < V.size(); j++) {
+				if (V[i][j] <= 0.) P[i][j] = 0.0;
+				else P[i][j] = V[i][j] * sumV;
 			}
 		}
 		P[i_lev][k_lev] = 0.0;
@@ -174,9 +174,9 @@ private:
 		vector <double> fE(cycles.size()); // relative efficiency
 		vector <double> fW(cycles.size()); // power
 
-		double sum_T = 0.0;
-		for (size_t q = 0; q < T.size(); q++) {
-			if (T[i_lev][q] > 0.0) sum_T += T[i_lev][q];
+		double sum_V = 0.0;
+		for (size_t q = 0; q < V.size(); q++) {
+			if (V[i_lev][q] > 0.0) sum_V += V[i_lev][q];
 		}
 
 		for (size_t c = 0; c < cycles.size(); c++)
@@ -186,7 +186,7 @@ private:
 			{
 				fE[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]];
 			}
-			fW[c] = fE[c] * sum_T;
+			fW[c] = fE[c] * sum_V;
 		}
 
 		// sorting by efficiency
@@ -212,7 +212,7 @@ private:
 
 public:
 
-	vector<vector <double> > T;							// net population flow rates; should be initialized from outside the class; allocated with compute_T function in molModel.h 
+	vector<vector <double> > V;							// net population flow rates; should be initialized from outside the class; allocated with compute_V function in molModel.h 
 	vector<vector <bool> >isItCollisionalDominated;
 
 	void pop_flow(const size_t &i, const size_t &k)		// main function that performs the search of paths or cycles from i to k levels; i and k begin from 1
@@ -249,7 +249,7 @@ public:
 
 	~MonteCarloSearchCycles()
 	{
-		T.clear();
+		V.clear();
 		P.clear();
 		P0.clear();
 		isItCollisionalDominated.clear();
