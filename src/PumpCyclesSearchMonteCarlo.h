@@ -143,12 +143,6 @@ private:
 				}
 			}
 
-			if (cycles.size() == 0) {
-				cycles.push_back(cycle);
-				cycle.CollDom.clear();
-				cycle.lms.clear();
-				continue;
-			}
 			size_t same_cycle_id = 0;
 			bool same_cycle = false;
 			for (size_t n = 0; n < cycles.size(); n++) {		// check whether the cycle has been found at previous attempts
@@ -203,7 +197,7 @@ private:
 
 			for (size_t m = 0; m < cycles[c].lms.size(); m++)
 			{
-				if (cycles[c].CollDom[m] && cycles[c].lms[m] != k_lev) cout << "*";
+				if (cycles[c].lms[m] != k_lev && cycles[c].CollDom[m]) cout << "*";
 				cout << cycles[c].lms[m] + 1 << "\t";
 			}
 			cout << "\n";
