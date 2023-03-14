@@ -28,6 +28,7 @@ private:
 	size_t num_of_tries;				// number of tries to search cycles
 	bool close_levels;					// = true - search for elementary cycles; = false - search for cycles with recursion
 	size_t MAX_STEPS;					// maximum allowed number of steps in a path; calculated in compute_P();
+	double minimum_efficiency;			// the cycles with efficiency below this value are not considered
 
 	void compute_P()					// compute fractions of population flow from all to all levels;
 	{
@@ -190,7 +191,7 @@ private:
 		for (size_t ic = 0; ic < cycles.size(); ic++)
 		{
 			size_t c = sort_indexes[ic];
-			if (fabs(fE[c]) < 1.e-30) continue;
+			if (fabs(fE[c]) < minimum_efficiency) continue;
 			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c];
 			if (cycles[c].A_is_not_positive_for_final_level) cout << " # warning A<=0 for the final level in this route";
 			cout << "\n";
@@ -226,9 +227,10 @@ public:
 		MAX_STEPS = 1;
 		k_lev = 0;
 		i_lev = 0;
+		minimum_efficiency = 1.e-6;
 	}
 
-	MonteCarloSearchCycles(const int &seed, const size_t &num_of_tries, const int &close_levels)
+	MonteCarloSearchCycles(const int &seed, const size_t &num_of_tries, const int &close_levels, const double &minimum_efficiency)
 	{
 		if (seed < 0) this->seed = static_cast<unsigned int>(time(NULL));
 		else this->seed =seed;
@@ -239,6 +241,7 @@ public:
 		MAX_STEPS = 1;
 		k_lev = 0;
 		i_lev = 0;
+		this->minimum_efficiency = minimum_efficiency;
 	}
 
 	~MonteCarloSearchCycles()
