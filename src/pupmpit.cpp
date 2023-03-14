@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
 	string flow_rates_file;
 	int seed, close_levels;
 	size_t num_of_tries;
+	double minimum_efficiency;
 
 	if (argc != 4) {
 		cout << "Usage:\n# pupmpit.exe molid low_level up_level\nwhere molid - 1-based id of molecule; low_level, up_level - 1-based ids of lower and upper transition levels" << endl;
@@ -72,6 +73,9 @@ int main(int argc, char* argv[])
 		getline(fin, str);
 		close_levels = readline<int>(fin);
 
+		getline(fin, str);
+		minimum_efficiency = readline<double>(fin);
+
 		fin.close();
 	}
 
@@ -93,7 +97,7 @@ int main(int argc, char* argv[])
 	}
 	size_t final_level = atoi(argv[3]);
 
-	MonteCarloSearchCycles MC(seed, num_of_tries, close_levels);
+	MonteCarloSearchCycles MC(seed, num_of_tries, close_levels, minimum_efficiency);
 	for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 		molModel *mol = new molModel(ispec);
 		{
