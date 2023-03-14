@@ -16,3 +16,5 @@ oh2co-h2.dat
 10000
 # Close levels? (0 - no, 1 -yes)
 1
+# the cycles with efficiency below this value are not considered
+1.e-6
