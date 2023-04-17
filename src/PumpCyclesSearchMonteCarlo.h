@@ -13,6 +13,13 @@ private:
 	struct loop_class {
 		double efficiency = 1.0;
 		size_t start_end;
+		double get_efficiency() {
+			double staggering_parameter = 1.0;
+			for (size_t i = 0; i < loops.size(); i++) {
+				staggering_parameter /= (1. - loops[i]->get_efficiency());
+			}
+			return staggering_parameter * efficiency;
+		}
 		vector <size_t> lms;
 		vector <loop_class *> loops;
 	};
@@ -226,6 +233,7 @@ private:
 
 		// calculate the relative efficiency and power of cycles
 		vector <double> fE(cycles.size()); // relative efficiency
+		vector <double> fE_noloop(cycles.size()); // relative efficiency without taking into account loops
 		vector <double> fW(cycles.size()); // power
 
 		double sum_V = 0.0;
@@ -237,6 +245,14 @@ private:
 			fE[c] = 1;
 			for (size_t m = 1; m < cycles[c].lms.size(); m++) {
 				fE[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]];
+			}
+			fE_noloop[c] = fE[c];
+			if (cycles[c].has_loops) {
+				double staggering_parameter = 1.0;
+				for (size_t ic = 0; ic < cycles[c].loops.size(); ic++) {
+					staggering_parameter /= (1. - cycles[c].loops[ic]->get_efficiency());
+				}
+				fE[c] *= staggering_parameter;
 			}
 			//fW[c] = fE[c] * sum_V;
 			fW[c] = fE[c] * V[k_lev][i_lev];
