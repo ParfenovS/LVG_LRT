@@ -266,7 +266,7 @@ private:
 			size_t c = sort_indexes[ic];
 			if (fabs(fE[c]) < minimum_efficiency) continue;
 			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c];
-			if (cycles[c].has_loops) cout << " # has loops ";
+			if (cycles[c].has_loops) cout << " # has loops, efficiency withoout loops = " << fE_noloop[c];
 			if (cycles[c].A_is_not_positive_for_final_level) cout << " # warning A<=0 for the final level in this route";
 			cout << "\n";
 
