@@ -132,7 +132,7 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 		if (filename.length() > 1) {
 			fout = fopen(filename.c_str(), "w");
 			if (fout == NULL) throw runtime_error("can't open file to save pops flow rates");
-			fprintf(fout, "#molid \t transid \t up->low \t freq., GHz \t pop_up * (A + Bul*J) - pop_low * Blu*J \n");
+			fprintf(fout, "#molid \t transid \t up->low \t freq., GHz \t pop_up * (A + Bul*J) - pop_low * Blu*J \t R/(Gamma+C)\n");
 		}
 
 		if (V.size() < levels.size()) {
@@ -151,12 +151,26 @@ get<> allows to avoid compilation errors/warnings related to difference of types
 			}
 		}
 
+		// saturation degree, see Elitzur 1992 section 4.2.1
 		for (size_t i = 0; i < rad_trans.size(); i++) {
 			const size_t & up = rad_trans[i].up_level;
 			const size_t & low = rad_trans[i].low_level;
 			V[up][low] = levels[up].pop*(rad_trans[i].A + rad_trans[i].Bul*rad_trans[i].J) - levels[low].pop*rad_trans[i].Blu*rad_trans[i].J;
 			V[low][up] = - V[up][low];
-			if (filename.length() > 1) fprintf(fout, "%zu \t %zu \t %zu -> %zu \t %le \t %le * (%le + %le) - %le * %le \n", this->idspec+1, rad_trans[i].trans_id, up+1, low+1, rad_trans[i].nu * 1.e-9, levels[up].pop, rad_trans[i].A, rad_trans[i].Bul*rad_trans[i].J, levels[low].pop, rad_trans[i].Blu*rad_trans[i].J);
+			double R = rad_trans[i].Bul * rad_trans[i].J;
+			double Gamma_low = coll_trans[low][low] - coll_trans[low][up];
+			double Gamma_up = coll_trans[up][up] - coll_trans[up][low];
+			for (size_t i1 = 0; i1 < rad_trans.size(); i1++) {
+				if (i1 == i) continue;
+				const size_t & up1 = rad_trans[i1].up_level;
+				const size_t & low1 = rad_trans[i1].low_level;
+				if (up == up1) Gamma_up += rad_trans[i1].A + rad_trans[i1].Bul*rad_trans[i1].J;
+				if (up == low1) Gamma_up += rad_trans[i1].Blu*rad_trans[i1].J;
+				if (low == up1) Gamma_low += rad_trans[i1].A + rad_trans[i1].Bul*rad_trans[i1].J;
+				if (low == low1) Gamma_low += rad_trans[i1].Blu*rad_trans[i1].J;
+			}
+			double Gamma1 = Gamma_low * Gamma_up / (Gamma_low + Gamma_up * levels[up].g / levels[low].g);
+			if (filename.length() > 1) fprintf(fout, "%zu \t %zu \t %zu -> %zu \t %le \t %le * (%le + %le) - %le * %le \t %le\n", this->idspec+1, rad_trans[i].trans_id, up+1, low+1, rad_trans[i].nu * 1.e-9, levels[up].pop, rad_trans[i].A, rad_trans[i].Bul*rad_trans[i].J, levels[low].pop, rad_trans[i].Blu*rad_trans[i].J, R / (Gamma1 + coll_trans[up][low]));
 		}
 		
 		for (size_t i = 0; i < levels.size(); i++) {
