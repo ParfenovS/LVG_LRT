@@ -178,8 +178,8 @@ private:
 				R = dist(gen);							// generating random R
 				lm1 = compare(A*R, lm); 				// searching for the next level (lm1) such that sum(q=1,lm1-1)Plmq < AR < sum(q=1,lm1)Plmq; the transition is from lm to lm1 levels
 				double Ai = compute_A(lm1);
-				if ((Ai <= 0.0 && lm1 != k_lev) || temp_fE < (minimum_efficiency * 0.01)) {
-					if (steps >= MAX_STEPS || temp_fE < (minimum_efficiency * 0.01)) {
+				if ((Ai <= 0.0 && lm1 != k_lev) || temp_fE < (minimum_efficiency * 0.1)) {
+					if (steps >= MAX_STEPS || temp_fE < (minimum_efficiency * 0.1)) {
 						steps = 0;
 						cycle.lms.clear();
 						cycle.CollDom.clear();
