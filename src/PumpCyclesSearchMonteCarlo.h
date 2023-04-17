@@ -6,21 +6,33 @@
 
 using namespace std;
 
+// see https://stackoverflow.com/questions/15128444/c-calling-a-function-from-a-vector-of-function-pointers-inside-a-class-where-t
+// see https://stackoverflow.com/questions/40736293/how-to-declare-a-vector-of-functions-lambdas?noredirect=1&lq=1
+
 class MonteCarloSearchCycles			// search for the maser pumping cycles (see e.g. Sobolev 1986; Sobolev & Deguchi 1994)
 {
 private:
+
+	struct loop_class {
+		double efficiency = 1.0;
+		size_t start_end;
+		vector <size_t> lms;
+		vector <loop_class *> loops;
+	};
 
 	struct cycle_class					// stores levels on a path from the i_lev to the k_lev levels
 	{
 		size_t cycle_counter = 1;
 		bool A_is_not_positive_for_final_level = false;
-		vector<size_t> lms;
-		vector<bool> CollDom;
+		bool has_loops = false;
+		vector <size_t> lms;
+		vector <bool> CollDom;
+		vector <loop_class *> loops;
 	};
 
-	vector<cycle_class> cycles;			// stores all the found paths from the i_lev to the k_lev levels
-	vector<vector<double> > P;
-	vector<vector<double> > P0;
+	vector <cycle_class> cycles;			// stores all the found paths from the i_lev to the k_lev levels
+	vector <vector <double> > P;
+	vector <vector <double> > P0;
 
 	size_t i_lev;						// initial level initialized in pop_flow()
 	size_t k_lev;						// final level initialized in pop_flow()
@@ -29,6 +41,50 @@ private:
 	bool close_levels;					// = true - search for elementary cycles; = false - search for cycles with recursion
 	size_t MAX_STEPS;					// maximum allowed number of steps in a path; calculated in compute_P();
 	double minimum_efficiency;			// the cycles with efficiency below this value are not considered
+
+	tuple<bool, size_t, vector <size_t>, vector <size_t> > find_loops(const vector <size_t> & lms) {
+		bool found_loop = false;
+		size_t start_end = 0;
+		vector <size_t> loop_lms;
+		vector <size_t> remained_lms;
+		for (size_t i = 0; i < lms.size() - 1; i++) {
+			loop_lms.clear();
+			remained_lms.clear();
+			size_t a1 = lms[i];
+			start_end = a1;
+			for (size_t j = i + 1; j < lms.size(); j++) {
+				size_t a2 = lms[j];
+				if (a1 == a2) {
+					found_loop = true;
+					for (size_t ir = j + 1; ir < lms.size(); ir++) {
+						remained_lms.push_back(lms[ir]);
+					}
+					break;
+				}
+				loop_lms.push_back(a2);
+			}
+			if (found_loop) break;
+		}
+		//auto [id, name, score] = find(); // see https://subscription.packtpub.com/book/programming/9781800208988/1/ch01lvl1sec14/using-structured-bindings-to-handle-multi-return-values
+		return std::make_tuple(found_loop, start_end, loop_lms, remained_lms);
+	}
+
+	// see https://www.geeksforgeeks.org/generic-tree-level-order-traversal/
+	void add_loop(const vector <size_t> & lms, vector <loop_class *> & loops) {
+		auto [ found_loop, start_end, loop_lms, remained_lms ] = find_loops(lms);
+		if (found_loop) {
+			loops.push_back(new loop_class());
+			loops.back()->lms = loop_lms;
+			loops.back()->start_end = start_end;
+			loops.back()->efficiency *= P0[start_end][loop_lms[0]];
+			for (size_t i = 1; i < loop_lms.size(); i++) {
+				loops.back()->efficiency *= P0[loop_lms[i - 1]][loop_lms[i]];
+			}
+			loops.back()->efficiency *= P0[loop_lms[loop_lms.size() - 1]][start_end];
+			add_loop(loop_lms, loops.back()->loops);
+		}
+		if (remained_lms.size() > 2) add_loop(remained_lms, loops);
+	}
 
 	void compute_P()					// compute fractions of population flow from all to all levels;
 	{
@@ -98,7 +154,7 @@ private:
 		return i_lev;
 	}
 
-	void search_for_cycles(mt19937 &gen, uniform_real_distribution<double> &dist)
+	void search_for_cycles(mt19937 &gen, uniform_real_distribution <double> &dist)
 	{
 		size_t lm, lm1, steps;
 		double A, R;
@@ -113,14 +169,15 @@ private:
 			P = P0;
 			A = compute_A(lm);
 			cycle.lms.push_back(lm);
+			double temp_fE = 1.0;
 
 			while (true) {
 				steps += 1;
 				R = dist(gen);							// generating random R
 				lm1 = compare(A*R, lm); 				// searching for the next level (lm1) such that sum(q=1,lm1-1)Plmq < AR < sum(q=1,lm1)Plmq; the transition is from lm to lm1 levels
 				double Ai = compute_A(lm1);
-				if (Ai <= 0.0 && lm1 != k_lev) {
-					if (steps >= MAX_STEPS) {
+				if ((Ai <= 0.0 && lm1 != k_lev) || temp_fE < (minimum_efficiency * 0.01)) {
+					if (steps >= MAX_STEPS || temp_fE < (minimum_efficiency * 0.01)) {
 						steps = 0;
 						cycle.lms.clear();
 						cycle.CollDom.clear();
@@ -128,12 +185,14 @@ private:
 						cycle.lms.push_back(lm);
 						P = P0;
 						A = compute_A(lm);
+						temp_fE = 1.0;
 					}
 					continue;
 				}
 				if (close_levels) close_level(lm);		// closing the current level
 				cycle.CollDom.push_back(isItCollisionalDominated[lm][lm1]);
 				cycle.lms.push_back(lm1);
+				temp_fE *= P0[lm][lm1];
 				lm = lm1;
 				if (close_levels) A = compute_A(lm);
 				else A = Ai;
@@ -165,6 +224,11 @@ private:
 			cycle.lms.clear();
 		}
 
+		for (size_t ic = 0 ; ic < cycles.size(); ic++) {
+			add_loop(cycles[ic].lms, cycles[ic].loops);
+			if (cycles[ic].loops.size() > 0) cycles[ic].has_loops = true;
+		}
+
 		// calculate the relative efficiency and power of cycles
 		vector <double> fE(cycles.size()); // relative efficiency
 		vector <double> fW(cycles.size()); // power
@@ -174,30 +238,28 @@ private:
 			if (V[i_lev][q] > 0.0) sum_V += V[i_lev][q];
 		}
 
-		for (size_t c = 0; c < cycles.size(); c++)
-		{
+		for (size_t c = 0; c < cycles.size(); c++) {
 			fE[c] = 1;
-			for (size_t m = 1; m < cycles[c].lms.size(); m++)
-			{
+			for (size_t m = 1; m < cycles[c].lms.size(); m++) {
 				fE[c] *= P0[cycles[c].lms[m - 1]][cycles[c].lms[m]];
 			}
-			fW[c] = fE[c] * sum_V;
+			//fW[c] = fE[c] * sum_V;
+			fW[c] = fE[c] * V[k_lev][i_lev];
 		}
 
 		// sorting by efficiency
 		vector <size_t> sort_indexes = argsort(fE);
 
 		// output results
-		for (size_t ic = 0; ic < cycles.size(); ic++)
-		{
+		for (size_t ic = 0; ic < cycles.size(); ic++) {
 			size_t c = sort_indexes[ic];
 			if (fabs(fE[c]) < minimum_efficiency) continue;
 			cout << cycles[c].lms.size() << " " << cycles[c].cycle_counter << " " << fE[c] << " " << fW[c];
+			if (cycles[c].has_loops) cout << " # has loops ";
 			if (cycles[c].A_is_not_positive_for_final_level) cout << " # warning A<=0 for the final level in this route";
 			cout << "\n";
 
-			for (size_t m = 0; m < cycles[c].lms.size(); m++)
-			{
+			for (size_t m = 0; m < cycles[c].lms.size(); m++) {
 				if (cycles[c].lms[m] != k_lev && cycles[c].CollDom[m]) cout << "*";
 				cout << cycles[c].lms[m] + 1 << "\t";
 			}
@@ -207,8 +269,8 @@ private:
 
 public:
 
-	vector<vector <double> > V;							// net population flow rates; should be initialized from outside the class; allocated with compute_V function in molModel.h 
-	vector<vector <bool> >isItCollisionalDominated;
+	vector <vector <double> > V;							// net population flow rates; should be initialized from outside the class; allocated with compute_V function in molModel.h 
+	vector <vector <bool> >isItCollisionalDominated;
 
 	void pop_flow(const size_t &i, const size_t &k)		// main function that performs the search of paths or cycles from i to k levels; i and k begin from 1
 	{
