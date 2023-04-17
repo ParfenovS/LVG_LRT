@@ -6,9 +6,6 @@
 
 using namespace std;
 
-// see https://stackoverflow.com/questions/15128444/c-calling-a-function-from-a-vector-of-function-pointers-inside-a-class-where-t
-// see https://stackoverflow.com/questions/40736293/how-to-declare-a-vector-of-functions-lambdas?noredirect=1&lq=1
-
 class MonteCarloSearchCycles			// search for the maser pumping cycles (see e.g. Sobolev 1986; Sobolev & Deguchi 1994)
 {
 private:
@@ -65,11 +62,9 @@ private:
 			}
 			if (found_loop) break;
 		}
-		//auto [id, name, score] = find(); // see https://subscription.packtpub.com/book/programming/9781800208988/1/ch01lvl1sec14/using-structured-bindings-to-handle-multi-return-values
 		return std::make_tuple(found_loop, start_end, loop_lms, remained_lms);
 	}
 
-	// see https://www.geeksforgeeks.org/generic-tree-level-order-traversal/
 	void add_loop(const vector <size_t> & lms, vector <loop_class *> & loops) {
 		auto [ found_loop, start_end, loop_lms, remained_lms ] = find_loops(lms);
 		if (found_loop) {
