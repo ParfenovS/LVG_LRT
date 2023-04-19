@@ -254,8 +254,7 @@ private:
 				}
 				fE[c] *= staggering_parameter;
 			}
-			//fW[c] = fE[c] * sum_V;
-			fW[c] = fE[c] * V[k_lev][i_lev];
+			fW[c] = fE[c] * sum_V;
 		}
 
 		// sorting by efficiency
