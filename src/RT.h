@@ -62,6 +62,7 @@ protected:
 
 		for (short i = 0; i < 3; i++) getline(fin, str);
 		beamH = readline<double>(fin);
+		if constexpr (ESCAPE_PROBABILITY_METHOD > 0) beamH = 1.0;
 
 		for (short i = 0; i < 3; i++) getline(fin, str);
 		sfin.str(trim(str));
