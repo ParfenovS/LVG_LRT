@@ -1,5 +1,10 @@
 #pragma once
 
+#define ESCAPE_PROBABILITY_METHOD 0                     // method used to compute the escape probability, 0 - LVG case from Castor (1970)
+                              //= 1                     // uniform sphere as in RADEX
+                              //= 2                     // expanding sphere (LVG) as in RADEX
+                              //= 3                     // plane parallel slab (shock) as in RADEX
+//
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
 #define BETA_NUM_SPLINE_POINTS 10000                    // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
