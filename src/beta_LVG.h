@@ -179,17 +179,17 @@ public:
 				//     with power law approximations for large and small tau
 				beta = [this](const double & tau) -> double {
 					const double taur = tau * 0.5;
-					if( fabs(taur) < 0.1) return 1.0 - 0.75 * taur + (taur * taur) / 2.5 
+					if( fabs(taur) < 0.02) return 1.0 - 0.75 * taur + (taur * taur) / 2.5 
 												- pow(taur, 3.) / 6.0 + pow(taur, 4.) / 17.5;
-					else if (fabs(taur) > 5.e1) return 0.75 / taur;
+					else if (fabs(taur) > 5.e2) return 0.75 / taur;
 					else return 0.75 / taur * (1. - 1. / (2 * (taur * taur)) +
 								(1. / taur + 1. / (2*(taur * taur))) * exp(-2.*taur));
 				};
 				DbetaDtau = [this](const double & tau) -> double {
-					const double taur = tau * 0.5;
-					if( fabs(taur) < 0.1) return 0.2285714285714286 * pow(taur, 3.) - 0.5 * (taur * taur) + 0.8 * taur - 0.75;
-					else if (fabs(taur) > 5.e1) return - 0.75 / (taur * taur);
-					else return -(exp(-2 * taur) * ((6 * (taur*taur) - 9) * exp(2*taur) + 12 * (taur*taur) + 18 * taur + 9)) / (8. * pow(taur, 4.));
+					const double taur = tau * 0.5; // note that Dbeta/Dtau = Dtaur/Dtau * Dbeta/Dtaur = 0.5 * Dbeta/Dtaur
+					if( fabs(taur) < 0.02) return 0.5 * ( 0.2285714285714286 * pow(taur, 3.) - 0.5 * (taur * taur) + 0.8 * taur - 0.75 );
+					else if (fabs(taur) > 5.e2) return 0.5 * ( - 0.75 / (taur * taur) );
+					else return 0.5 * ( -(exp(-2 * taur) * ((6 * (taur*taur) - 9) * exp(2*taur) + 12 * (taur*taur) + 18 * taur + 9)) / (8. * pow(taur, 4.)) );
 				};
 			} else if constexpr (ESCAPE_PROBABILITY_METHOD == 2) {
 				//     Expanding sphere = Large Velocity Gradient (LVG) or Sobolev case.
@@ -197,26 +197,26 @@ public:
 				//     corrected by factor 2 in order to match beta(tau=0)=1
 				beta = [this](const double & tau) -> double {
 					const double taur = tau * 0.5;
-					if (fabs(taur) < 0.01) return 1.0;
-					else if (fabs(taur) < 7.0) return 2.0 * (1.0 - exp(-2.34 * taur)) / (4.68 * taur);
+					if (fabs(taur) < 1.e-8) return 1.0;
+					else if (fabs(taur) < 6.96756) return 2.0 * (1.0 - exp(-2.34 * taur)) / (4.68 * taur);
 					else return 2.0 / (taur * 4.0 * (sqrt(log(taur / sqrt(PI)))));
 				};
 				DbetaDtau = [this](const double & tau) -> double {
 					const double taur = tau * 0.5;
-					if (fabs(taur) < 0.01) return 0.0;
-					else if (fabs(taur) < 7.0) return (exp(-2.34 * taur)) / taur - (0.4273504273504274 * (1. - exp(-2.34 * taur))) / (taur * taur);
-					else return -0.5 / ((taur*taur) * sqrt(log(taur / sqrt(PI)))) - 0.25 / ((taur*taur) * pow(log(taur / sqrt(PI)), (1.5)));
+					if (fabs(taur) < 1.e-8) return 0.0;
+					else if (fabs(taur) < 6.96756) return 0.5 * ( (exp(-2.34 * taur)) / taur - (0.4273504273504274 * (1. - exp(-2.34 * taur))) / (taur * taur) );
+					else return 0.5 * ( -0.5 / ((taur*taur) * sqrt(log(taur / sqrt(PI)))) - 0.25 / ((taur*taur) * pow(log(taur / sqrt(PI)), (1.5))) );
 				};
 			} else if constexpr (ESCAPE_PROBABILITY_METHOD == 3) {
 				//     Slab geometry (e.g., shocks): de Jong, Dalgarno & Chu 1975,
 				//     ApJ 199, 69 (again with power law approximations)
 				beta = [this](const double & tau) -> double {
-					if (fabs(3.0 * tau) < 0.1) return 1.0 - 1.5 * (tau - tau*tau);
+					if (fabs(3.0 * tau) < 1.e-6) return 1.0 - 1.5 * (tau - tau*tau);
 					else if (fabs(3.0 * tau) > 50.0) return 1. / (3.0 * tau);
 					else return (1. - exp(-3.0 * tau)) / (3.0 * tau);
 				};
 				DbetaDtau = [this](const double & tau) -> double {
-					if (fabs(3.0 * tau) < 0.1) return -1.5 * (1 - 2 * tau);
+					if (fabs(3.0 * tau) < 1.e-6) return -1.5 * (1 - 2 * tau);
 					else if (fabs(3.0 * tau) > 50.0) return - 1. / (3.0 * tau * tau);
 					else return (exp(-3.0 * tau)) / tau - (1 - exp(-3.0 * tau)) / (3.0 * tau*tau);
 				};
