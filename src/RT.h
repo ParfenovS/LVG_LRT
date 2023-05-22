@@ -411,7 +411,6 @@ protected:
 			}
 			pop_norm = sqrt(pop_norm);
 		}
-		minimum_tau = 1.0;
 		return there_were_bad_levels;
 	}
 
