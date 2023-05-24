@@ -3,6 +3,7 @@
 #include "hiddenParameters.h"
 #include <functional>
 #include "cubature/cubature.h"
+//#include"gamma.h"
 
 typedef struct {
 	double sig;
@@ -28,11 +29,64 @@ private:
 	double tauCutOff;	    // tau limit below which beta=(1-exp(-tau))/tau will be expanded as a Taylor series
 	double sig;        		// equation A6 from Langer & Watson
 	double oPlusSigDiv3; 	// = (1 + sig / 3)
+	//double epsb;			// = 1. / beamH;
 	double tau_min; 		// minimum optical depth for which there will be precomputed values of beta in the case of sig != 0
 	double tau_max; 		// maximum optical depth for which there will be precomputed values of beta in the case of sig != 0
 
 	akima_spline spline_neg; // structure for akima spline interpolation of beta for negative taus
 	akima_spline spline_pos; // structure for akima spline interpolation of beta for positive taus
+	
+	/*double F1(const double & lam, const double & phi, const double & x) // equation A12 from Langer & Watson
+	{
+		const double phi2 = phi * phi;
+		const double phi3 = phi2 * phi;
+		const double d = (1. - phi) / (lam * phi); // equation A13
+		const double d2 = d * d;
+		const double d3 = d2 * d;
+		const double a = (1 - x * x) * sig * lam / ((1. + sig) * (1 + sig * x * x)); // equation A9
+
+		return pow(1. - phi, 3.) / (2. * phi * lam) * exp(lam / (1. - phi)) * (
+			lowgamma(1, -a) +
+			0.5 * d * (1 + 5 * phi) * lowgamma(2, -a) + 
+			(1./ 8.) * d2 * (3 + 10 * phi + 35 * phi2) * lowgamma(3, -a) +
+			(5./ 16.) * d3 * (1 + 3 * phi + 7 * phi2 + 21 * phi3) * lowgamma(4, -a) + 
+			(5./ 128.) * d2 * d2 * (7 + 20 * phi + 42 * phi2 + 84 * phi3 + 231 * phi2 * phi2) * lowgamma(5, -a) + 
+			(7./ 256.) * d3 * d2 * (9 + 25 * phi + 50 * phi2 + 90 * phi3 + 165 * phi2 * phi2 + 429 * phi3 * phi2) * lowgamma(6, -a)
+		);
+	}
+
+	double F3(const double & lam, const double & x) // equation A16 from Langer & Watson
+	{
+		const double sig2 = sig * sig;
+		const double sig3 = sig2 * sig;
+		const double x3 = x * x * x;
+		const double lam2 = lam * lam;
+
+		return exp(lam) * (
+			1 - x - (1 - x3) / 3. * sig * (lam - 1) + (1 - x3*x*x) * sig2 * 0.1 * lam2 -
+			(1 - x3 * x3 * x) * sig3 * (1. / 14.) * (lam / 3. + 1) * lam2 +
+			(1 - x3 * x3 * x3) * sig2 * sig2 * (1. / 9.) * (lam2 / 24. + lam / 3. + 0.5) * lam2 -
+			(1 - x3 * x3 * x3 * x * x) * sig3 * sig2 * (1. / 22.) * (lam2 * lam / 60. + lam2 * 0.25 + lam + 1) * lam2
+		);
+	}
+
+	double G5(const double & lam, const double & phi, const double & x) // equation A21 from Langer & Watson
+	{
+		const double oneminx = 1 / (1 - phi * x * x);
+		const double oneminx2 = oneminx * oneminx;
+		const double sphi = sqrt(phi);
+		const double Lt = log( (1 + sphi) / (1 - sphi) * (1 - sphi * x) / (1 + sphi * x)) / sphi; // equation A22 from Langer & Watson
+		const double lam2 = lam * lam;
+		const double inveps = 1. / epsb;
+		const double inveps2 = inveps * inveps;
+
+		return (1 - x + lam * 0.25 * Lt + // note, there is no factor of 1/2 in comparison to eq. A21 from Langer & Watson
+			lam2 * (inveps - x * oneminx + Lt * 0.5) * (1. / 12.) +
+			lam2 * lam * (inveps2 - x * oneminx2 + 1.5 * inveps - 1.5 * x * oneminx + Lt * (3./4.)) * (1. / 96.) +
+			lam2 * lam2 * (inveps2 * inveps * (1./3.) - x * oneminx2 * oneminx * (1./3.) + inveps2 * (5./12.) - x * oneminx2 * (5./12.) + inveps * (5./8.) - x * oneminx  * (5./8.) + Lt * (5./16.)) * (1. / 240.) + 
+			lam2 * lam2 * lam * (inveps2 * inveps2 * (1./8.) - x * oneminx2 * oneminx2 * (1./8.) + inveps2 * inveps * (7./48.) - x * oneminx2 * oneminx * (7./48.) + inveps2 * (35./192.) - x * oneminx2 * (35./192.) + inveps * (35./128.) - x * oneminx * (35./128.) + Lt * (35./256.)) * (1. / 720.) // note there is a difference in power of one of the members in comparison to eq. A21 from Langer & Watson
+		);
+	}*/
 
 	double integrate_F(const double & tau) 		// the integral in equation A1 from Langer & Watson
 	{
@@ -95,7 +149,25 @@ private:
 
 	double beta_Beam(const double & tau)			// LVG escape probability with beaming, see Appendix A in Langer & Watson 1984, Castor 1970
 	{
-		if (tau > tau_max) return 1. / tau * oPlusSigDiv3; 	// see equation A.6 from Castor 1970	
+		if (tau > tau_max) return 1. / tau * oPlusSigDiv3; 	// see equation A.6 from Castor 1970
+		/*if (tau < 0.0) { //return exp(spline_neg.akima_eval(tau));
+			if (sig < 0.0) {
+				const double lam = -tau; // equation A.8 from Langer & Watson
+				const double ilam = 1.0 / lam; // equation A.8 from Langer & Watson
+				const double phi = -sig; // equation A.11 from Langer & Watson
+				double xtilde = 0.0;
+				if (lam > 3.5) xtilde = 0.0;
+				else if (lam < 3.5 * epsb) xtilde = 1.0;
+				else xtilde = sqrt((1 - lam / 3.5) / phi); // equation A.23 from Langer & Watson
+
+				if (-1 < sig && sig <= -0.4) {
+					return G5(lam, phi, 0) - G5(lam, phi, xtilde) - ilam * (1 - xtilde - phi * (1 - xtilde*xtilde*xtilde) * (1./3.)) + ilam * F1(lam, phi, xtilde);
+				} else {
+					if (lam < 1 + 42 *(1 - 4 * phi + 4.17 * phi * phi)) return G5(lam, phi, xtilde) - ilam * (1 - xtilde - phi * (1 - xtilde*xtilde*xtilde) * (1./3.)) + ilam * F3(lam, xtilde);
+					return G5(lam, phi, xtilde) - ilam * (1 - xtilde - phi * (1 - xtilde*xtilde*xtilde) * (1./3.)) + ilam * F1(lam, phi, xtilde);
+				}
+			} else return exp(spline_neg.akima_eval(tau));
+		}*/
 		if (tau < 0.0) return exp(spline_neg.akima_eval(tau));
 		else return exp(spline_pos.akima_eval(tau));
 	}
@@ -146,6 +218,7 @@ public:
 
 	beta_LVG(const double & beamH)
 	{
+		//epsb = 1.0e00 / beamH;
 		sig = 1.0e00 / beamH - 1.0e00;					// equation A6 from Langer & Watson 1984
 		oPlusSigDiv3 = 1.e0 + sig / 3.e0;
 		tauCutOff = pow((24.*DBL_EPSILON), 0.25); 	// taken from LIME code (Brinch & Hogerheijde 2010)
