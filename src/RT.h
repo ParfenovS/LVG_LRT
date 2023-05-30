@@ -424,6 +424,7 @@ protected:
 			}
 			pop_norm = sqrt(pop_norm);
 		}
+		if (mol->idspec == modelPhysPars::nSpecies - 1) minimum_tau = 1.0;
 		return there_were_bad_levels;
 	}
 
