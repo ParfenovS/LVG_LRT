@@ -387,7 +387,6 @@ public:
 						there_were_bad_levels = ( update_check_pops(&mols[ispec], pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter_in, oldpops_Ng[ispec], pop_norm[ispec]) || there_were_bad_levels);
 					}
 				}
-				minimum_tau = 1.0;
 				if (solveStatEqSuccess == 0 && cerr_output_iter_progress) {
 					cerr << iter_in << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " << levelWithMaxRPopDiff << endl;
 				}
