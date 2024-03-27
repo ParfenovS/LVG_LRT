@@ -21,7 +21,7 @@ UTILIZE_PREVIOUS_SOLUTIONS = True
 
 HDENSITIES = numpy.power(10., numpy.arange(4.0, 8.0, 1.0)) # [cm^-3]
 GAS_TEMPERATURES = numpy.arange(50, 200, 25) # [K]
-SPECIFIC_COLUMN_DENSITIES = numpy.power(10., numpy.arange(12.5, 14.75, 0.25))
+SPECIFIC_COLUMN_DENSITIES = numpy.power(10., numpy.arange(12.5, 14.75, 0.25)) # [cm^-3 s]
 COLLISION_PARTNERS_FRACTIONS = [1.0, 0.2]  # partners for CH3OH: H2 , He
 #### ***************
 INITIAL_SOLUTION = 0 # 0 - from file; 1 - optically thin; 2 - LTE
