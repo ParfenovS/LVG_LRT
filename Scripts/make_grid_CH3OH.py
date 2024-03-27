@@ -19,8 +19,8 @@ SLOWLY_INCREASE_BEAMING = True
 PREVIOUS_BEAMING = None # should be a number or None
 UTILIZE_PREVIOUS_SOLUTIONS = True
 
-HDENSITIES = numpy.power(10., numpy.arange(4.0, 8.0, 1.0))
-GAS_TEMPERATURES = numpy.arange(50, 200, 25)
+HDENSITIES = numpy.power(10., numpy.arange(4.0, 8.0, 1.0)) # [cm^-3]
+GAS_TEMPERATURES = numpy.arange(50, 200, 25) # [K]
 SPECIFIC_COLUMN_DENSITIES = numpy.power(10., numpy.arange(12.5, 14.75, 0.25))
 COLLISION_PARTNERS_FRACTIONS = [1.0, 0.2]  # partners for CH3OH: H2 , He
 #### ***************
@@ -30,14 +30,15 @@ FILE_WITH_LAMDA_DATA = ["rabli_a.dat", "rabli_e.dat"]
 MAXIMUM_DpopDt_OR_popDiff = 1.e-4
 MAXIMUM_NUMBER_OF_ITERATIONS = 50000
 BEAMING = [1.0, 10.0]
-LINE_WIDTH = 2.0
+LINE_WIDTH = 2.0 # [km/s]
+MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY = 100 * 1.496e+13 # [cm]
 LIST_OF_TRANSITIONS = [
     [1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860],  # A-methanol transitions
     [2, 399], [2, 11883], [2, 10204], [2, 12446], [2, 10211], [2, 2850], [2, 314], [2, 1489], [2, 3523], [2, 5690], [2, 11699], [2, 8933] # E-methanol transitions
 ]
 #### Dust parameters, dust emission is computed as:
 #### J = DUST_DILLUTION_FACTORS * (1 - exp(DUST_OPTICAL_DEPTHS_AT_FREQS0 * (nu/DUST_FREQS0)^DUST_P)) * planck_function(DUST_TEMPERATURES,nu)
-DUST_TEMPERATURES = [220] #[K]
+DUST_TEMPERATURES = [220] # [K]
 DUST_DILLUTION_FACTORS = [0.0]
 DUST_OPTICAL_DEPTHS_AT_FREQS0 = [1.0]
 DUST_FREQS0 = [2.307692307692308e11] # [Hz]
@@ -327,42 +328,43 @@ def make_grid(output_filename="grid_results.txt"):
     ids = 0
     for N_dVi in SPECIFIC_COLUMN_DENSITIES:
         for nHi in HDENSITIES:
-            for Tgi in GAS_TEMPERATURES:
-                for Wdi in DUST_DILLUTION_FACTORS:
-                    if (Wdi == 0.0 and INNER_DUST_INCLUDED == 0):
-                        dust_temp_array = numpy.array([DUST_TEMPERATURES[0]])
-                        tau_dust_array = numpy.array([DUST_OPTICAL_DEPTHS_AT_FREQS0[0]])
-                        freq_dust_array = numpy.array([DUST_FREQS0[0]])
-                        dust_p_array = numpy.array([DUST_P[0]])
-                    else:
-                        dust_temp_array = DUST_TEMPERATURES
-                        tau_dust_array = DUST_OPTICAL_DEPTHS_AT_FREQS0
-                        freq_dust_array = DUST_FREQS0
-                        dust_p_array = DUST_P
-                    if (Wdi == 0.0):
-                        tau_dust_array = numpy.array([DUST_OPTICAL_DEPTHS_AT_FREQS0[0]])
-                    if (DUST_TEMPERATURE_EQUAL_TO_GAS_TEMPERATURE):
-                        dust_temp_array = numpy.array([Tgi])
-                    for Tdi in dust_temp_array:
-                        if (DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE and Tdi >= Tgi) or not DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE:
-                            for tauDusti in tau_dust_array:
-                                for freqDusti in freq_dust_array:
-                                    for pDusti in dust_p_array:
-                                        for Whiii in HII_DILLUTION_FACTORS:
-                                            if (Whiii == 0.0):
-                                                te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
-                                                turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
-                                            else:
-                                                te_array = ELECTRON_TEMPERATURES
-                                                turnFreqi_array = TURNOVER_FREQS
-                                            for Tei in te_array:
-                                                for turnFreqi in turnFreqi_array:
-                                                    for beamHi in BEAMING:
-                                                        tasks.append(input_parameters( ids, \
-                                                            nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
-                                                            pDusti, Tei, Whiii, turnFreqi, beamHi
-                                                        ))
-                                                        ids += 1
+            if N_dVi < (MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY * 1.e-5 / LINE_WIDTH) * nHi:
+                for Tgi in GAS_TEMPERATURES:
+                    for Wdi in DUST_DILLUTION_FACTORS:
+                        if (Wdi == 0.0 and INNER_DUST_INCLUDED == 0):
+                            dust_temp_array = numpy.array([DUST_TEMPERATURES[0]])
+                            tau_dust_array = numpy.array([DUST_OPTICAL_DEPTHS_AT_FREQS0[0]])
+                            freq_dust_array = numpy.array([DUST_FREQS0[0]])
+                            dust_p_array = numpy.array([DUST_P[0]])
+                        else:
+                            dust_temp_array = DUST_TEMPERATURES
+                            tau_dust_array = DUST_OPTICAL_DEPTHS_AT_FREQS0
+                            freq_dust_array = DUST_FREQS0
+                            dust_p_array = DUST_P
+                        if (Wdi == 0.0):
+                            tau_dust_array = numpy.array([DUST_OPTICAL_DEPTHS_AT_FREQS0[0]])
+                        if (DUST_TEMPERATURE_EQUAL_TO_GAS_TEMPERATURE):
+                            dust_temp_array = numpy.array([Tgi])
+                        for Tdi in dust_temp_array:
+                            if (DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE and Tdi >= Tgi) or not DUST_TEMPERATURE_CANT_BE_LOWER_THAN_GAS_TEMPERATURE:
+                                for tauDusti in tau_dust_array:
+                                    for freqDusti in freq_dust_array:
+                                        for pDusti in dust_p_array:
+                                            for Whiii in HII_DILLUTION_FACTORS:
+                                                if (Whiii == 0.0):
+                                                    te_array = numpy.array([ELECTRON_TEMPERATURES[0]])
+                                                    turnFreqi_array = numpy.array([TURNOVER_FREQS[0]])
+                                                else:
+                                                    te_array = ELECTRON_TEMPERATURES
+                                                    turnFreqi_array = TURNOVER_FREQS
+                                                for Tei in te_array:
+                                                    for turnFreqi in turnFreqi_array:
+                                                        for beamHi in BEAMING:
+                                                            tasks.append(input_parameters( ids, \
+                                                                nHi, Tgi, N_dVi, Tdi, Wdi, tauDusti, freqDusti, \
+                                                                pDusti, Tei, Whiii, turnFreqi, beamHi
+                                                            ))
+                                                            ids += 1
     print("there will be " + str(ids) + " models")
     pool = multiprocessing.Pool(processes=UTILIZED_NUMBER_OF_CORES)
     results = []
@@ -416,7 +418,7 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
         for N_dVi in SPECIFIC_COLUMN_DENSITIES:
             Previous_nH = None
             for nHi in HDENSITIES:
-                if N_dVi < 1.5e9 * nHi:
+                if N_dVi < (MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY * 1.e-5 / LINE_WIDTH) * nHi:
                     for Tgi in GAS_TEMPERATURES:
                         for Wdi in DUST_DILLUTION_FACTORS:
                             if (Wdi == 0.0 and INNER_DUST_INCLUDED == 0):
