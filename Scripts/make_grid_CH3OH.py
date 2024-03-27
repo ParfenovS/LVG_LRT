@@ -31,6 +31,7 @@ MAXIMUM_DpopDt_OR_popDiff = 1.e-4
 MAXIMUM_NUMBER_OF_ITERATIONS = 50000
 BEAMING = [1.0, 10.0]
 LINE_WIDTH = 2.0 # [km/s]
+MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY = 1 * 1.496e+13 # [cm]
 MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY = 100 * 1.496e+13 # [cm]
 LIST_OF_TRANSITIONS = [
     [1, 6119], [1, 2373], [1, 2125], [1, 1624], [1, 1430], [1, 1379], [1, 4792], [1, 6860],  # A-methanol transitions
@@ -328,7 +329,8 @@ def make_grid(output_filename="grid_results.txt"):
     ids = 0
     for N_dVi in SPECIFIC_COLUMN_DENSITIES:
         for nHi in HDENSITIES:
-            if N_dVi < (MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY * 1.e-5 / LINE_WIDTH) * nHi:
+            cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi
+            if MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY <= cloud_size <= MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY:
                 for Tgi in GAS_TEMPERATURES:
                     for Wdi in DUST_DILLUTION_FACTORS:
                         if (Wdi == 0.0 and INNER_DUST_INCLUDED == 0):
@@ -418,7 +420,8 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
         for N_dVi in SPECIFIC_COLUMN_DENSITIES:
             Previous_nH = None
             for nHi in HDENSITIES:
-                if N_dVi < (MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY * 1.e-5 / LINE_WIDTH) * nHi:
+                cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi
+                if MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY <= cloud_size <= MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY:
                     for Tgi in GAS_TEMPERATURES:
                         for Wdi in DUST_DILLUTION_FACTORS:
                             if (Wdi == 0.0 and INNER_DUST_INCLUDED == 0):
