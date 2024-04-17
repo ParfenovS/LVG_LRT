@@ -219,7 +219,7 @@ private:
 		}
 		
 		double norm = 0.0;
-		double pops_sum = 0.0;
+		//double pops_sum = 0.0;
 		for (size_t i = n; i-- > 0; ) {
 			dpop_dt[i] = 0.0;
 			for (size_t j = n; j-- > 0; ) {
@@ -230,7 +230,7 @@ private:
 			B[i] = (BDF_coeffs[0] * mol->levels[i].pop + BDF_coeffs[1] * oldpops[i][0] + BDF_coeffs[2] * oldpops[i][1]) / h - dpop_dt[i];		// BDF method formula
 			A[i + i*n] -= BDF_coeffs[0] / h;
 			//A[0 + i*n] = 1.0;	// A[0][i] = 1.0 - the equation for the first level is replaced by the particle number conservation law, i.e. the sum of populations should be = partition functions ratio or = 1
-			pops_sum += mol->levels[i].pop;
+			//pops_sum += mol->levels[i].pop;
 		}
 		//B[0] = this->partition_function_ratio[mol->idspec] - pops_sum; // the sum of populations should be = partition functions ratio or = 1
 		return sqrt(norm);
