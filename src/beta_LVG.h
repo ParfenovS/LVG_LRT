@@ -250,7 +250,7 @@ public:
 				//     Uniform sphere formula from Osterbrock (Astrophysics of
 				//     Gaseous Nebulae and Active Galactic Nuclei) Appendix 2
 				//     with power law approximations for large and small tau
-				beta = [this](const double & tau) -> double {
+				beta = [](const double & tau) -> double {
 					const double taur = tau * 0.5;
 					if( fabs(taur) < 0.02) return 1.0 - 0.75 * taur + (taur * taur) / 2.5 
 												- pow(taur, 3.) / 6.0 + pow(taur, 4.) / 17.5;
@@ -258,7 +258,7 @@ public:
 					else return 0.75 / taur * (1. - 1. / (2 * (taur * taur)) +
 								(1. / taur + 1. / (2*(taur * taur))) * exp(-2.*taur));
 				};
-				DbetaDtau = [this](const double & tau) -> double {
+				DbetaDtau = [](const double & tau) -> double {
 					const double taur = tau * 0.5; // note that Dbeta/Dtau = Dtaur/Dtau * Dbeta/Dtaur = 0.5 * Dbeta/Dtaur
 					if( fabs(taur) < 0.02) return 0.5 * ( 0.2285714285714286 * pow(taur, 3.) - 0.5 * (taur * taur) + 0.8 * taur - 0.75 );
 					else if (fabs(taur) > 5.e2) return 0.5 * ( - 0.75 / (taur * taur) );
@@ -268,13 +268,13 @@ public:
 				//     Expanding sphere = Large Velocity Gradient (LVG) or Sobolev case.
 				//     Formula from De Jong, Boland and Dalgarno (1980, A&A 91, 68)
 				//     corrected by factor 2 in order to match beta(tau=0)=1
-				beta = [this](const double & tau) -> double {
+				beta = [](const double & tau) -> double {
 					const double taur = tau * 0.5;
 					if (fabs(taur) < 1.e-8) return 1.0;
 					else if (fabs(taur) < 6.96756) return 2.0 * (1.0 - exp(-2.34 * taur)) / (4.68 * taur);
 					else return 2.0 / (taur * 4.0 * (sqrt(log(taur / sqrt(PI)))));
 				};
-				DbetaDtau = [this](const double & tau) -> double {
+				DbetaDtau = [](const double & tau) -> double {
 					const double taur = tau * 0.5;
 					if (fabs(taur) < 1.e-8) return 0.0;
 					else if (fabs(taur) < 6.96756) return 0.5 * ( (exp(-2.34 * taur)) / taur - (0.4273504273504274 * (1. - exp(-2.34 * taur))) / (taur * taur) );
@@ -283,12 +283,12 @@ public:
 			} else if constexpr (ESCAPE_PROBABILITY_METHOD == 3) {
 				//     Slab geometry (e.g., shocks): de Jong, Dalgarno & Chu 1975,
 				//     ApJ 199, 69 (again with power law approximations)
-				beta = [this](const double & tau) -> double {
+				beta = [](const double & tau) -> double {
 					if (fabs(3.0 * tau) < 1.e-6) return 1.0 - 1.5 * (tau - tau*tau);
 					else if (fabs(3.0 * tau) > 50.0) return 1. / (3.0 * tau);
 					else return (1. - exp(-3.0 * tau)) / (3.0 * tau);
 				};
-				DbetaDtau = [this](const double & tau) -> double {
+				DbetaDtau = [](const double & tau) -> double {
 					if (fabs(3.0 * tau) < 1.e-6) return -1.5 * (1 - 2 * tau);
 					else if (fabs(3.0 * tau) > 50.0) return - 1. / (3.0 * tau * tau);
 					else return (exp(-3.0 * tau)) / tau - (1 - exp(-3.0 * tau)) / (3.0 * tau*tau);
