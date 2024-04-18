@@ -6,219 +6,87 @@
 using namespace std;
 
 template <typename real_type>
-inline void daxpy ( const size_t & n, real_type da, real_type dx[], real_type dy[] )
-
+inline void daxpy(const size_t & n, real_type da, real_type dx[], real_type dy[]) {
 //****************************************************************************80
 //
 //  Purpose:
 //
 //    DAXPY computes constant times a vector plus a vector.
-//
-//  Discussion:
-//
-//    This routine uses unrolled loops for increments equal to one.
-//
-//  Licensing:
-//
-//    This code is distributed under the GNU LGPL license.
-//
-//  Modified:
-//
-//    02 May 2005
-//
-//  Author:
-//
-//    Original FORTRAN77 version by Charles Lawson, Richard Hanson, 
-//    David Kincaid, Fred Krogh.
-//    C++ version by John Burkardt.
-//
-//  Reference:
-//
-//    Jack Dongarra, Jim Bunch, Cleve Moler, Pete Stewart,
-//    LINPACK User's Guide,
-//    SIAM, 1979,
-//    ISBN13: 978-0-898711-72-1,
-//    LC: QA214.L56.
-//
-//    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-//    Basic Linear Algebra Subprograms for Fortran Usage,
-//    Algorithm 539,
-//    ACM Transactions on Mathematical Software,
-//    Volume 5, Number 3, September 1979, pages 308-323.
-//
-//  Parameters:
-//
-//    Input, int N, the number of elements in DX and DY.
-//
-//    Input, double DA, the multiplier of DX.
-//
-//    Input, double DX[*], the first vector.
-//
-//    Input/output, double DY[*], the second vector.
 //    On output, DY[*] has been replaced by DY[*] + DA * DX[*].
 //
-{
-  size_t i;
-
-  if ( da == 0.0 )
-  {
-    return;
-  }
-
-  #if defined (_MSC_VER)
-  #pragma loop( ivdep )
-  #elif defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC ivdep
-  #else 
+  #if defined(__clang__)
+  #pragma clang loop vectorize(enable) interleave(enable)
+  #elif defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)
   #pragma ivdep
+  #elif defined(__GNUC__)
+  #pragma GCC ivdep
+  #elif defined (_MSC_VER)
+  #pragma loop( ivdep )
   #endif
-  for ( i = 0; i < n; i++ )
-  {
+  for (size_t i = 0; i < n; i++) {
     dy[i] = dy[i] + da * dx[i];
   }
-
   return;
 }
 
 //****************************************************************************80
 
 template <typename real_type>
-inline void dscal ( const size_t & n, real_type sa, real_type x[] )
-
+inline void dscal(const size_t & n, real_type sa, real_type x[]) {
 //****************************************************************************80
 //
 //  Purpose:
 //
 //    DSCAL scales a vector by a constant.
 //
-//  Licensing:
-//
-//    This code is distributed under the GNU LGPL license.
-//
-//  Modified:
-//
-//    02 May 2005
-//
-//  Author:
-//
-//    Original FORTRAN77 version by Charles Lawson, Richard Hanson, 
-//    David Kincaid, Fred Krogh.
-//    C++ version by John Burkardt.
-//
-//  Reference:
-//
-//    Jack Dongarra, Jim Bunch, Cleve Moler, Pete Stewart,
-//    LINPACK User's Guide,
-//    SIAM, 1979,
-//    ISBN13: 978-0-898711-72-1,
-//    LC: QA214.L56.
-//
-//    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-//    Basic Linear Algebra Subprograms for Fortran Usage,
-//    Algorithm 539,
-//    ACM Transactions on Mathematical Software,
-//    Volume 5, Number 3, September 1979, pages 308-323.
-//
-//  Parameters:
-//
-//    Input, int N, the number of entries in the vector.
-//
-//    Input, double SA, the multiplier.
-//
-//    Input/output, double X[*], the vector to be scaled.
-//
-{
-  size_t i;
-
-  #if defined (_MSC_VER)
-  #pragma loop( ivdep )
-  #elif defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC ivdep
-  #else 
+  #if defined(__clang__)
+  #pragma clang loop vectorize(enable) interleave(enable)
+  #elif defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)
   #pragma ivdep
+  #elif defined(__GNUC__)
+  #pragma GCC ivdep
+  #elif defined (_MSC_VER)
+  #pragma loop( ivdep )
   #endif
-  for ( i = 0; i < n; i++ )
-  {
+  for (size_t i = 0; i < n; i++) {
     x[i] = sa * x[i];
   }
-
   return;
 }
 //****************************************************************************80
 
 template <typename real_type>
-inline size_t idamax ( const size_t & n, real_type dx[] )
+inline size_t idamax(const size_t & n, real_type dx[]) {
+  real_type dmax, temp;
+  size_t value = 0;
 
-//****************************************************************************80
-//
-//  Purpose:
-//
-//    IDAMAX finds the index of the vector element of maximum absolute value.
-//
-//  Discussion:
-//
-//    WARNING: This index is a 1-based index, not a 0-based index!
-//
-//  Licensing:
-//
-//    This code is distributed under the GNU LGPL license.
-//
-//  Modified:
-//
-//    02 May 2005
-//
-//  Author:
-//
-//    Original FORTRAN77 version by Charles Lawson, Richard Hanson, 
-//    David Kincaid, Fred Krogh.
-//    C++ version by John Burkardt.
-//
-//  Reference:
-//
-//    Jack Dongarra, Jim Bunch, Cleve Moler, Pete Stewart,
-//    LINPACK User's Guide,
-//    SIAM, 1979,
-//    ISBN13: 978-0-898711-72-1,
-//    LC: QA214.L56.
-//
-//    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-//    Basic Linear Algebra Subprograms for Fortran Usage,
-//    Algorithm 539,
-//    ACM Transactions on Mathematical Software,
-//    Volume 5, Number 3, September 1979, pages 308-323.
-//
-//  Parameters:
-//
-//    Input, int N, the number of entries in the vector.
-//
-//    Input, double X[*], the vector to be examined.
-//
-//    Output, int IDAMAX, the index of the element of maximum
-//    absolute value.
-//
-{
-  real_type dmax;
-  size_t i;
-  size_t value;
-
-  value = 0;
-
-  if ( n == 1 )
-  {
-    return value;
-  }
-
-  dmax = fabs ( dx[0] );
-
-  for ( i = 1; i < n; i++ )
-  {
-    if ( dmax < fabs ( dx[i] ) )
-    {
+  dmax = fabs(dx[0]);
+  for (size_t i = 1; i < n; i++) {
+    temp = fabs(dx[i]);
+    if (dmax < temp) {
       value = i;
-      dmax = fabs ( dx[i] );
+      dmax = temp;
     }
   }
+  return value;
+}
+//****************************************************************************80
 
+template <typename real_type>
+inline std::pair<size_t, size_t> idamax(const size_t & n, real_type dx[], const size_t & lda, const size_t & k) {
+  real_type dmax, temp;
+  std::pair<size_t, size_t> value = std::make_pair(k, k);
+
+  dmax = fabs(dx[k + k * lda]);
+  for (size_t i = k; i < n; i++) {
+    for (size_t j = k; j < n; j++) {
+      temp = fabs(dx[i + j * lda]);
+      if (dmax < temp) {
+        value = std::make_pair(i, j);
+        dmax = temp;
+      }
+    }
+  }
   return value;
 }
 //****************************************************************************80
