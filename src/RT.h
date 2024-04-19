@@ -239,19 +239,17 @@ protected:
 	size_t solve_eq_sys(double A[], double B[], molModel *mol)			// solves linear system of equations A*X = B with LU decomposition
 	{
 		const size_t & n = mol->levels.size();
-		//size_t *ipvt = new size_t[n];
+		size_t *ipvt = new size_t[n];
 
-		//const size_t info = dgefa( A, n, n, ipvt ); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
-		const size_t info = dgefa( A, n, n ); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
+		const size_t info = dgefa( A, n, n, ipvt ); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
 		if (info > 0) {
-			//delete[] ipvt;
+			delete[] ipvt;
 			return info;
 		}
 
-		//dgesl( A, n, n, ipvt, B ); 						// obtaining the solution X using factorized matrix A, degsl is the LINPACK function, see linpack/linpack_d.hpp
-		dgesl( A, n, n, B ); 						// obtaining the solution X using factorized matrix A, degsl is the LINPACK function, see linpack/linpack_d.hpp
+		dgesl( A, n, n, ipvt, B ); 						// obtaining the solution X using factorized matrix A, degsl is the LINPACK function, see linpack/linpack_d.hpp
 
-		//delete[] ipvt;
+		delete[] ipvt;
 		return info;
 	}
 
