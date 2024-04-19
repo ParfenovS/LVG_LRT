@@ -73,25 +73,6 @@ inline size_t idamax(const size_t & n, real_type dx[]) {
 //****************************************************************************80
 
 template <typename real_type>
-inline std::pair<size_t, size_t> idamax(const size_t & n, real_type dx[], const size_t & lda, const size_t & k) {
-  real_type dmax, temp;
-  std::pair<size_t, size_t> value = std::make_pair(k, k);
-
-  dmax = fabs(dx[k + k * lda]);
-  for (size_t i = k; i < n; i++) {
-    for (size_t j = k; j < n; j++) {
-      temp = fabs(dx[i + j * lda]);
-      if (dmax < temp) {
-        value = std::make_pair(i, j);
-        dmax = temp;
-      }
-    }
-  }
-  return value;
-}
-//****************************************************************************80
-
-template <typename real_type>
 real_type dnrm2 ( const size_t & n, real_type x[])
 
 //****************************************************************************80
