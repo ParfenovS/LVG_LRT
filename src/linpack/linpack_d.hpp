@@ -91,57 +91,6 @@ void dgesl(real_type a[], const size_t &lda, const size_t &n, size_t ipvt[], rea
 }
 
 template <typename real_type>
-size_t dgefa(real_type a[], const size_t &lda, const size_t &n) {
-  size_t info;
-  size_t j;
-  size_t k;
-  real_type t;
-  //
-  //  Gaussian elimination without pivoting.
-  //
-  info = 0;
-
-  for (k = 0; k < n - 1; k++) {
-    //
-    //  Compute multipliers.
-    //
-    t = - 1.0 / a[k + k * lda];
-
-    dscal(n - k - 1, t, a + k + 1 + k * lda);
-    //
-    //  Row elimination
-    //
-    for (j = k + 1; j < n; j++) {
-      t = a[k + j * lda];
-      daxpy(n - k - 1, t, a + k + 1 + k * lda, a + k + 1 + j * lda);
-    }
-  }
-
-  if (a[n - 1 + (n - 1) * lda] == 0.0) info = n;
-
-  return info;
-}
-
-template <typename real_type>
-void dgesl(real_type a[], const size_t &lda, const size_t &n, real_type b[]) {
-  size_t k;
-  real_type t;
-  //
-  //  Solve A * X = B.
-  //
-  for (k = 0; k < n - 1; k++) {
-    t = b[k];
-    daxpy(n - k - 1, t, a + k + 1 + k * lda, b + k + 1);
-  }
-  for (k = n; k-- > 0;) {
-    b[k] = b[k] / a[k + k * lda];
-    t = -b[k];
-    daxpy(k, t, a + 0 + k * lda, b);
-  }
-  return;
-}
-
-template <typename real_type>
 size_t dsvdc(real_type a[], const size_t &lda, const size_t &n, real_type s[], real_type e[], real_type work[])
 
 //****************************************************************************80
