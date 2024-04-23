@@ -1,6 +1,16 @@
 #pragma once
 #include "Dust_HII_CMB_Jext_Radiation.h"
 #include "beta_LVG.h"
+#if defined(USE_LAPACKE)
+#if defined(MKL_ILP64)
+#include "mkl_lapacke.h"
+#define lapack_int MKL_INT
+#else
+#include "lapacke.h"
+#endif
+#else
+#define lapack_int size_t
+#endif
 #include "linpack/linpack_d.hpp"
 
 class RT		// base class containing functions for radiative transfer calculations;
@@ -239,15 +249,23 @@ protected:
 	size_t solve_eq_sys(double A[], double B[], molModel *mol)			// solves linear system of equations A*X = B with LU decomposition
 	{
 		const size_t & n = mol->levels.size();
-		size_t *ipvt = new size_t[n];
+		lapack_int *ipvt = new lapack_int[n];
 
-		const size_t info = dgefa( A, n, n, ipvt ); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
+		#if !defined(USE_LAPACKE)
+		lapack_int info = dgefa( A, n, n, ipvt ); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
+		#else
+		lapack_int info = LAPACKE_dgesv(LAPACK_COL_MAJOR, n, 1, A, n, ipvt, B, n); 	// factorization of the matrix A, degfa is the LINPACK function, see linpack/linpack_d.hpp
+		if (info < 0) info = - info;
+		info = static_cast<size_t>(info);
+		#endif
 		if (info > 0) {
 			delete[] ipvt;
 			return info;
 		}
 
+		#if !defined(USE_LAPACKE)
 		dgesl( A, n, n, ipvt, B ); 						// obtaining the solution X using factorized matrix A, degsl is the LINPACK function, see linpack/linpack_d.hpp
+		#endif
 
 		delete[] ipvt;
 		return info;
