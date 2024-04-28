@@ -348,7 +348,7 @@ public:
 		size_t speciesWithMaxRPopDiff = 0;
 		// integrate the kinetic equations system with the second order BDF method using variable time step (see Jannelli & Fazio 2006, Journal of Computational and Applied Mathematics, 191, 246)
 		do {
-			unsigned int iter_in = 0;
+			unsigned int iter_in = 1;
 			double rn = 1.0;
 			bool there_were_bad_levels = false;
 			bool solution_failed = false;
@@ -396,7 +396,7 @@ public:
 				}
 				iter_in += 1;
 				MaxRPopDiff_at_prev_iter = MaxRPopDiff;
-			} while (MaxRPopDiff > MAX_LOCAL_ACCURACY && iter_in < MAX_NUM_INNER_STEPS);
+			} while (MaxRPopDiff > MAX_LOCAL_ACCURACY && iter_in <= MAX_NUM_INNER_STEPS);
 			
 			double max_monitor_function = -1.e30;
 			if (!solution_failed && iter_in < MAX_NUM_INNER_STEPS) {
