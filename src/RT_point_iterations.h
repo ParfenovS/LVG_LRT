@@ -162,7 +162,7 @@ public:
 				cerr << iter << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
 			}
 			iter += 1;
-		} while (MaxRPopDiff > MAX_DpopsDt_EPS && iter < maxNumberOfIterations);
+		} while (MaxRPopDiff > MAX_DpopsDt_EPS && iter <= maxNumberOfIterations);
 
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			delete[] pop[ispec];
