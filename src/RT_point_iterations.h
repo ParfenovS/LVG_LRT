@@ -135,7 +135,7 @@ public:
 		size_t levelWithMaxRPopDiff;
 		size_t speciesWithMaxRPopDiff;
 
-		unsigned int iter = 0;
+		unsigned int iter = 1;
 		do {
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 				populate_matrix_vector(A[ispec], pop[ispec], LVG_beta, &mols[ispec]);
@@ -151,7 +151,6 @@ public:
 					return 1;
 				}
 			}
-			iter += 1;
 			double dummy_pop_norm = 1.e-30;
 			levelWithMaxRPopDiff = 0;
 			speciesWithMaxRPopDiff = 0;
@@ -162,6 +161,7 @@ public:
 			if (cerr_output_iter_progress) {
 				cerr << iter << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
 			}
+			iter += 1;
 		} while (MaxRPopDiff > MAX_DpopsDt_EPS && iter < maxNumberOfIterations);
 
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
