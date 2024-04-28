@@ -12,7 +12,7 @@
 #define MIN_POP 1.e-30                                  // the populations can't be lower than this value
 #define MAX_POP (1.0-1000*DBL_EPSILON)                  // the populations can't be higher than this value
 #define Ng_order 2                                      // the order of Ng acceleration
-#define Ng_start (Ng_order + 1)                         // the iteration number from which Ng acceleration will be switched on
+#define Ng_start (Ng_order + 1)                         // the iteration number after which Ng acceleration will be switched on
 #define DoNg true                                       // whether to use Ng acceleration
 #define MAX_LOCAL_ACCURACY 1.e-12                       // maximum relative local error used at each step of integration over time
 #define MAX_NUM_INNER_STEPS 10000                       // maximum number of local iterations to achive LOCAL_ACCURACY
