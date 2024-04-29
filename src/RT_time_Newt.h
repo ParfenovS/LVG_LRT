@@ -140,7 +140,7 @@ private:
 	{
 		const size_t & n = mol->levels.size();
 		
-		// A[i * j*n] - rate of transition from j-th to i-th level
+		// A[i + j*n] - rate of transition from j-th to i-th level
 		// Collisional transitions
 		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
 		for (size_t i = 0; i < n; i++) {
