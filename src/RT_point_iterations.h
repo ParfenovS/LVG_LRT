@@ -55,12 +55,12 @@ private:
 			A[low + up*n]  += temp_var;                                   	// A[low][up] += Aul + Bul * J
 			A[up + up*n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
 		}
-		
+		const double A00 = fabs(A[0]);
 		for (size_t i = 0; i < n; i++) {
-			A[0 + i*n] = 1.0;	// A[0][i] = 1.0 - the equation for the first level is replaced by the particle number conservation law, i.e. the sum of populations should be = 1 or = partition functions ratio
+			A[0 + i*n] = A00;	// A[0][i] = 1.0 * A[0][0] - the equation for the first level is replaced by the particle number conservation law, i.e. the sum of populations should be = 1 or = partition functions ratio multiplied by A[0][0] for numerical stability
 			B[i] = 0.0;
 		}
-		B[0] = this->partition_function_ratio[mol->idspec]; // the sum of populations should be = 1 or = partition functions ratio
+		B[0] = A00 * this->partition_function_ratio[mol->idspec]; // the sum of populations should be = 1 or = partition functions ratio multiplied by A[0][0]
 	}
 
 	void prepare_results_for_output(beta_LVG & LVG_beta)
