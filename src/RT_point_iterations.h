@@ -147,7 +147,7 @@ public:
 						delete[] A[ispec1];
 					}
 					oldpops_Ng.clear();
-					cerr << "#error: solve_stat_equilibrium failed, info = " << solveStatEqSuccess << endl;
+					cerr << "#error: solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 					return 1;
 				}
 			}
