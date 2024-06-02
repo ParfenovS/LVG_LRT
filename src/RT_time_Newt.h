@@ -399,7 +399,7 @@ public:
 			} while (MaxRPopDiff > MAX_LOCAL_ACCURACY && iter_in <= MAX_NUM_INNER_STEPS);
 			
 			double max_monitor_function = -1.e30;
-			if (!solution_failed && iter_in < MAX_NUM_INNER_STEPS) {
+			if (!solution_failed && iter_in <= MAX_NUM_INNER_STEPS) {
 				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 					double monitor_function = 0.e0;
 					for (size_t i = mols[ispec].levels.size(); i-- > 0; ) {
