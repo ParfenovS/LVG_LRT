@@ -170,7 +170,7 @@ public:
 		}
 		oldpops_Ng.clear();
 
-		if (iter == maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
+		if (iter > maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 		
 		prepare_results_for_output(LVG_beta);
 		
