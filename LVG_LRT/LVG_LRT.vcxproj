@@ -150,7 +150,7 @@
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\physconsts.h" />
     <ClInclude Include="..\src\RT.h" />
-    <ClInclude Include="..\src\RT_point_iterations.h" />
+    <ClInclude Include="..\src\RT_statEquiv.h" />
     <ClInclude Include="..\src\RT_time_Newt.h" />
     <ClInclude Include="..\src\spline.h" />
     <ClInclude Include="..\src\stdafx.h" />

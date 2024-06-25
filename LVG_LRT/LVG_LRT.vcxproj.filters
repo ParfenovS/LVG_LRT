@@ -59,9 +59,6 @@
     <ClInclude Include="..\src\RT.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\RT_point_iterations.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\RT_time_Newt.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -90,6 +87,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="..\src\linpack\linpack_d.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\RT_statEquiv.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
