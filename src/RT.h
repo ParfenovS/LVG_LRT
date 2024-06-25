@@ -23,7 +23,6 @@ protected:
 	double beamH; 												// beaming factor; this is eps^-1 = D(ln r)/D(ln V) quantity from e.g. Sobolev et al. 1997, Cragg et al. 2005
 	double lineWidth; 											// spectral width of the lines; this will be used to determine blended lines
 	double invlineWidth;										// = 1 / lineWidth
-	double minimum_tau;											// minimum value among optical depths < -1
 	dust_HII_CMB_Jext_radiation *dust_HII_CMB_Jext_emission; 	// this object will be used for calculations of external emission
 	bool cerr_output_iter_progress; 							// = true - the current iteration number, maximum relative pop difference and corresponding level number will be printed on the standard cerr pipe
 	string line_profile_shape; 									// ="g" - Gaussian line profile; ="r" - rectangular line profile
@@ -202,7 +201,6 @@ protected:
 		mol->rad_trans[i].tau *= HC4PI;
 		mol->rad_trans[i].tau += mol->rad_trans[i].taud_in;
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
-		if (mol->rad_trans[i].tau < (-1. / beamH) && mol->rad_trans[i].tau < minimum_tau) minimum_tau = mol->rad_trans[i].tau;
 	}
 	
 	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S, double & out_kabs)		//computes mean intensity, source function, escape probability, and their product, absorption coeff for radiative transition i
@@ -424,11 +422,9 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			double var_under_relax_fac = 1.0;
-			if (minimum_tau < (-1. / beamH)) var_under_relax_fac = 1.0 / (ceil(fabs(beamH * minimum_tau)));
 			double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				mol->levels[i].pop = max(pop[i], MIN_POP) * var_under_relax_fac + (1. - var_under_relax_fac) * mol->levels[i].pop;
+				mol->levels[i].pop = max(pop[i], MIN_POP);
 				pops_sum += mol->levels[i].pop;
 			}
 			pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
@@ -442,7 +438,6 @@ protected:
 			}
 			pop_norm = sqrt(pop_norm);
 		}
-		if (mol->idspec == modelPhysPars::nSpecies - 1) minimum_tau = 1.0;
 		return there_were_bad_levels;
 	}
 
@@ -493,7 +488,6 @@ public:
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(fin);
 		fin.close();
 		this->cerr_output_iter_progress = true;
-		minimum_tau = 1.0;
 	}
 	
 	RT(istream & cin)
@@ -502,7 +496,6 @@ public:
 		this->read_parameters(cin);
 		this->dust_HII_CMB_Jext_emission = new dust_HII_CMB_Jext_radiation(cin);
 		this->cerr_output_iter_progress = false;
-		minimum_tau = 1.0;
 	}
 
 	virtual ~RT()
