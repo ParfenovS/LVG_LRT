@@ -29,3 +29,6 @@ LVG_LRT.exe :
 #
 #	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
 #	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
+#
+#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
+#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
