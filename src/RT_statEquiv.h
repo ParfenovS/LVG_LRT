@@ -2,7 +2,7 @@
 #include "RT.h"
 #include <cstring>
 
-class RT_statEquiv : public RT		// solves statistical equilibrium equations for level populations using fixed point iterations
+class RT_statEquiv : public RT		// solves statistical equilibrium equations for level populations using Newton method or fixed point iterations
 {
 private:
 	
@@ -42,10 +42,10 @@ private:
 		}
 
 		// Radiative transitions
-		double temp_var, temp_var_Jac, Sf, beta, Jin, kabs;
+		double temp_var, temp_var_Jac, Sf, beta, kabs;
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 			compute_tau(i, mol);
-			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, Jin, kabs);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
 			double common_multiplier = (mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
 					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
 					(1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.DbetaHIIDtau_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII;
@@ -115,17 +115,70 @@ private:
 		return sqrt(Fnorm);
 	}
 
+	double getF(double A[], double pop[], double temp_pop[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	{
+		const size_t& n = mol->levels.size();
+		for (size_t i = 0; i < n; i++) {
+			temp_pop[i] = mol->levels[i].pop;
+			mol->levels[i].pop = pop[i];
+		}
+
+		// A[i + j*n] - rate of transition from j-th to i-th level
+		// Collisional transitions
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
+		for (size_t i = 0; i < n; i++) {
+			A[i + i * n] = -mol->coll_trans[i][i];
+			for (size_t j = i + 1; j < n; j++) {
+				A[i + j * n] = mol->coll_trans[j][i];
+				A[j + i * n] = mol->coll_trans[i][j];
+			}
+		}
+
+		// Radiative transitions
+		double temp_var, Sf, beta, kabs;
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			compute_tau(i, mol);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
+			
+			const size_t& up = mol->rad_trans[i].up_level;
+			const size_t& low = mol->rad_trans[i].low_level;
+
+			temp_var = mol->rad_trans[i].Blu * mol->rad_trans[i].J;
+			A[up + low * n] += temp_var;                                   	// A[up][low] += Blu * J
+			A[low + low * n] -= temp_var;    									// A[low][low] -= Blu * J
+
+			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
+			A[low + up * n] += temp_var;                                   	// A[low][up] += Aul + Bul * J
+			A[up + up * n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
+		}
+
+		double pops_sum = 0.0;
+		double Fnorm = 0.0;
+		double F;
+		for (size_t i = n; i-- > 1; ) {
+			F = 0.0;
+			for (size_t j = n; j-- > 0; ) F += A[i + j * n] * mol->levels[j].pop;
+			pops_sum += mol->levels[i].pop;
+			Fnorm += F * F;
+		}
+		double F0 = this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop);
+		Fnorm += F0 * F0;
+
+		for (size_t i = 0; i < n; i++) mol->levels[i].pop = temp_pop[i];
+
+		return sqrt(Fnorm);
+	}
+
 	void prepare_results_for_output(beta_LVG & LVG_beta)
 	{
 		// preparing quantities for output
 		double dummy_S = 0.0;
 		double dummy_beta = 0.0;
-		double dummy_betaS = 0.0;
 		double dummy_kabs = 0.0;
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				compute_tau(i, &mols[ispec]); 		// computing final optical depths that can be used for output
-				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_betaS, dummy_kabs); 	// computing final mean intensities that can be used for output
+				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_kabs); 	// computing final mean intensities that can be used for output
 				compute_Tex(i, &mols[ispec]); 		// computing excitation temperature that can be used for output
 				compute_brightness_temperature(i, &mols[ispec]); 	// computing brightness temperature and intensity of the emission
 			}
@@ -183,6 +236,18 @@ public:
 			dpop.push_back(new double[mols[ispec].levels.size()]);
 		}
 
+		vector <double*> temp_pop;
+		temp_pop.reserve(modelPhysPars::nSpecies);
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			temp_pop.push_back(new double[mols[ispec].levels.size()]);
+		}
+
+		vector <double*> temp_pop1;
+		temp_pop1.reserve(modelPhysPars::nSpecies);
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			temp_pop1.push_back(new double[mols[ispec].levels.size()]);
+		}
+
 		vector <double*> A; 	// reserve space for matrix A from the statistical equilibrium equations system A*X=B
 		A.reserve(modelPhysPars::nSpecies);
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
@@ -204,7 +269,7 @@ public:
 		do {
 			Fnorm = 0.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				double tempFnorm = Fnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], LVG_beta, &mols[ispec]);
+				double tempFnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], LVG_beta, &mols[ispec]);
 				if (tempFnorm > Fnorm) Fnorm = tempFnorm;
 				//double cond_number = get_condition_number(A[ispec], &mols[ispec]);
 				size_t solveStatEqSuccess = solve_eq_sys(Jac[ispec], dpop[ispec], &mols[ispec]);		// solve the equation system Jac*dpop = -F
@@ -212,6 +277,8 @@ public:
 					for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
 						delete[] pop[ispec1];
 						delete[] dpop[ispec1];
+						delete[] temp_pop[ispec1];
+						delete[] temp_pop1[ispec1];
 						delete[] A[ispec1];
 						delete[] Jac[ispec1];
 					}
@@ -219,15 +286,51 @@ public:
 					cerr << "#error: Newton solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 					return 1;
 				}
-				double rate = 1.0; // see kinsol package, https://github.com/LLNL/sundials/tree/main/src/kinsol
+				double rate = 0.99; // see kinsol package for the step length calculations according to the bounds on the solution vector, https://github.com/LLNL/sundials/tree/main/src/kinsol
 				for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-					double temp_pop = dpop[ispec][i] + mols[ispec].levels[i].pop;
-					if ((temp_pop <= 0.0 || temp_pop > 1.0) && fabs(dpop[ispec][i]) > 0.0) {
+					double cur_pop = dpop[ispec][i] + mols[ispec].levels[i].pop;
+					if ((cur_pop <= 0.0 || cur_pop > 1.0) && fabs(dpop[ispec][i]) > 0.0) {
 						rate = min(rate, mols[ispec].levels[i].pop / fabs(dpop[ispec][i]));
 					}
 				}
-				if (rate < 1.0) rate *= 0.9;
-				if (rate > pow(DBL_EPSILON, (2./3.))) { // see kinsol package, https://github.com/LLNL/sundials/tree/main/src/kinsol
+				if (rate < 0.99) rate *= 0.9;
+				if (rate >= MIN_NEWT_SCALE) {
+					double rate1 = MIN_NEWT_SCALE;
+					double rate2 = rate;
+					double rate_step = (rate2 - rate1) * MAX_NEWT_SCALE_STEP;
+					do {
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate1 * dpop[ispec][i];
+						}
+						double Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate1 + rate_step) * dpop[ispec][i];
+						}
+						double Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						double DFnormDrate1 = (Fnorm2 - Fnorm1) / rate_step;
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate2 - rate_step) * dpop[ispec][i];
+						}
+						Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate2 * dpop[ispec][i];
+						}
+						Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						double DFnormDrate2 = (Fnorm2 - Fnorm1) / rate_step;
+						if (DFnormDrate1 * DFnormDrate2 > 0.0) break;
+						rate = (rate1 + rate2) * 0.5;
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate - rate_step) * dpop[ispec][i];
+						}
+						Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate * dpop[ispec][i];
+						}
+						Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
+						double DFnormDrate = (Fnorm2 - Fnorm1) / rate_step;
+						if (DFnormDrate < 0.0) rate1 = rate;
+						else rate2 = rate;
+					} while (fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = rate * dpop[ispec][i] + mols[ispec].levels[i].pop;
 				} else { // use simple iteration if Newton step is too small
 					solveStatEqSuccess = solve_eq_sys(A[ispec], pop[ispec], &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
@@ -235,11 +338,13 @@ public:
 						for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
 							delete[] pop[ispec1];
 							delete[] dpop[ispec1];
+							delete[] temp_pop[ispec1];
+							delete[] temp_pop1[ispec1];
 							delete[] A[ispec1];
 							delete[] Jac[ispec1];
 						}
 						oldpops_Ng.clear();
-						cerr << "#error: simple itaration solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
+						cerr << "#error: simple iteration solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 						return 1;
 					}
 				}
@@ -255,11 +360,13 @@ public:
 				cerr << iter << " Fnorm= " << Fnorm << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
 			}
 			iter += 1;
-		} while (MaxRPopDiff > MAX_DpopsDt_EPS && iter <= maxNumberOfIterations);
+		} while (Fnorm > FNORM_STOPPING && MaxRPopDiff > MAX_DpopsDt_EPS && iter <= maxNumberOfIterations);
 
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			delete[] pop[ispec];
 			delete[] dpop[ispec];
+			delete[] temp_pop[ispec];
+			delete[] temp_pop1[ispec];
 			delete[] A[ispec];
 			delete[] Jac[ispec];
 		}
