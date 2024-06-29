@@ -10,12 +10,11 @@ private:
 		// preparing quantities for output
 		double dummy_S = 0.0;
 		double dummy_beta = 0.0;
-		double dummy_betaS = 0.0;
 		double dummy_kabs = 0.0;
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			for (size_t i = 0; i < mols[ispec].rad_trans.size(); i++) {
 				compute_tau(i, &mols[ispec]); 		// computing final optical depths that can be used for output
-				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_betaS, dummy_kabs); 	// computing final mean intensities that can be used for output
+				compute_J_S_beta(&mols[ispec], i, LVG_beta, dummy_S, dummy_beta, dummy_kabs); 	// computing final mean intensities that can be used for output
 				compute_Tex(i, &mols[ispec]); 		// computing excitation temperature that can be used for output
 				compute_brightness_temperature(i, time, &mols[ispec]); 	// computing brightness temperature and intensity of the emission
 			}
@@ -155,10 +154,10 @@ private:
 		}
 		
         // Radiative transitions
-		double temp_var, temp_var_Jac, Sf, beta, Jin, kabs;
+		double temp_var, temp_var_Jac, Sf, beta, kabs;
 		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
 			compute_tau(i, mol);
-			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, Jin, kabs);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
 			double common_multiplier = (mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
 					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
 					(1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.DbetaHIIDtau_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII;
