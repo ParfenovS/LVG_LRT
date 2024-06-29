@@ -203,10 +203,11 @@ protected:
 		if (mol->rad_trans[i].tau < MIN_TAU) mol->rad_trans[i].tau = MIN_TAU; 	// MIN_TAU is defined in hiddenParameters.h
 	}
 	
-	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & beta_S, double & out_kabs)		//computes mean intensity, source function, escape probability, and their product, absorption coeff for radiative transition i
+	void compute_J_S_beta(molModel *mol, const size_t & i, beta_LVG & LVG_beta, double & S, double & beta, double & out_kabs)		//computes mean intensity, source function, escape probability, and their product, absorption coeff for radiative transition i
 	{ // see also equation for Jav in Appendix A of Sobolev et al. 1997
 		const double emiss = emiss_coeff(i, mol);
 		const double kabs = abs_coeff(i, mol);
+		double beta_S;
 		out_kabs = kabs;
 
 		beta = 1.0e00; 		// escape probability = beta(tau) -> 1 for tau -> 0.0
@@ -422,14 +423,14 @@ protected:
 				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
 				temp_pop.clear();
 			}
-			double pops_sum = 0;
+			//double pops_sum = 0;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
 				mol->levels[i].pop = max(pop[i], MIN_POP);
-				pops_sum += mol->levels[i].pop;
+				//pops_sum += mol->levels[i].pop;
 			}
-			pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
+			//pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
 			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				mol->levels[i].pop *= pops_sum;
+				//mol->levels[i].pop *= pops_sum;
 				pop_norm += mol->levels[i].pop * mol->levels[i].pop;
 				for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
 				if (!(DoNg && iter > Ng_start)) {
