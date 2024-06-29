@@ -5,6 +5,10 @@
                               //= 2                     // expanding sphere (LVG) as in RADEX
                               //= 3                     // plane parallel slab (shock) as in RADEX
 //
+#define MIN_NEWT_SCALE pow(DBL_EPSILON, (2./3.))        // minimum value of the Newton step scale, see kinsol package for minimum step value, https://github.com/LLNL/sundials/tree/main/src/kinsol
+#define NEWT_SCALE_ACCURACY 1.e-2                       // relative accuracy of the Newton step scale when searching the scale with bisection method
+#define MAX_NEWT_SCALE_STEP 1.e-6                       // maximum step of the Newton step scale to find the numerical derivative of the objective function used in bisection method
+#define FNORM_STOPPING 1.e-18                           // the nonlinear solver will stop when the norm of the function is lower than this value
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
 #define BETA_NUM_SPLINE_POINTS 10000                    // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
