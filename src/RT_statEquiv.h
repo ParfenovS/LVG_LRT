@@ -115,10 +115,11 @@ private:
 		return sqrt(Fnorm);
 	}
 
-	double getF(double A[], double pop[], double temp_pop[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	double getF(double A[], double pop[], double temp_pop[], double dpop[], const double & rate, beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
 	{
 		const size_t& n = mol->levels.size();
 		for (size_t i = 0; i < n; i++) {
+			pop[i] = mol->levels[i].pop + rate * dpop[i];
 			temp_pop[i] = mol->levels[i].pop;
 			mol->levels[i].pop = pop[i];
 		}
@@ -236,18 +237,6 @@ public:
 			dpop.push_back(new double[mols[ispec].levels.size()]);
 		}
 
-		vector <double*> temp_pop;
-		temp_pop.reserve(modelPhysPars::nSpecies);
-		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			temp_pop.push_back(new double[mols[ispec].levels.size()]);
-		}
-
-		vector <double*> temp_pop1;
-		temp_pop1.reserve(modelPhysPars::nSpecies);
-		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			temp_pop1.push_back(new double[mols[ispec].levels.size()]);
-		}
-
 		vector <double*> A; 	// reserve space for matrix A from the statistical equilibrium equations system A*X=B
 		A.reserve(modelPhysPars::nSpecies);
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
@@ -277,8 +266,6 @@ public:
 					for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
 						delete[] pop[ispec1];
 						delete[] dpop[ispec1];
-						delete[] temp_pop[ispec1];
-						delete[] temp_pop1[ispec1];
 						delete[] A[ispec1];
 						delete[] Jac[ispec1];
 					}
@@ -299,38 +286,20 @@ public:
 					double rate2 = rate;
 					double rate_step = (rate2 - rate1) * MAX_NEWT_SCALE_STEP;
 					do {
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate1 * dpop[ispec][i];
-						}
-						double Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate1 + rate_step) * dpop[ispec][i];
-						}
-						double Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						double DFnormDrate1 = (Fnorm2 - Fnorm1) / rate_step;
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate2 - rate_step) * dpop[ispec][i];
-						}
-						Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate2 * dpop[ispec][i];
-						}
-						Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						double DFnormDrate2 = (Fnorm2 - Fnorm1) / rate_step;
-						if (DFnormDrate1 * DFnormDrate2 > 0.0) break;
+						double Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate1, LVG_beta, &mols[ispec]);
+						double Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate1 + 2 * rate_step), LVG_beta, &mols[ispec]);
+						double DFnormDrate1 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
+						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate2 - 2 * rate_step), LVG_beta, &mols[ispec]);
+						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate2, LVG_beta, &mols[ispec]);
+						double DFnormDrate2 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
+						if (DFnormDrate1 * DFnormDrate2 > 0.0 || DFnormDrate1 > 0.0 || DFnormDrate2 < 0.0) break;
 						rate = (rate1 + rate2) * 0.5;
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + (rate - rate_step) * dpop[ispec][i];
-						}
-						Fnorm1 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-							temp_pop[ispec][i] = mols[ispec].levels[i].pop + rate * dpop[ispec][i];
-						}
-						Fnorm2 = getF(Jac[ispec], temp_pop[ispec], temp_pop1[ispec], LVG_beta, &mols[ispec]);
-						double DFnormDrate = (Fnorm2 - Fnorm1) / rate_step;
+						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate - 2 * rate_step), LVG_beta, &mols[ispec]);
+						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate, LVG_beta, &mols[ispec]);
+						double DFnormDrate = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
 						if (DFnormDrate < 0.0) rate1 = rate;
 						else rate2 = rate;
-					} while (fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));
+					} while (2 * fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = rate * dpop[ispec][i] + mols[ispec].levels[i].pop;
 				} else { // use simple iteration if Newton step is too small
 					solveStatEqSuccess = solve_eq_sys(A[ispec], pop[ispec], &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
@@ -338,8 +307,6 @@ public:
 						for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
 							delete[] pop[ispec1];
 							delete[] dpop[ispec1];
-							delete[] temp_pop[ispec1];
-							delete[] temp_pop1[ispec1];
 							delete[] A[ispec1];
 							delete[] Jac[ispec1];
 						}
@@ -365,8 +332,6 @@ public:
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			delete[] pop[ispec];
 			delete[] dpop[ispec];
-			delete[] temp_pop[ispec];
-			delete[] temp_pop1[ispec];
 			delete[] A[ispec];
 			delete[] Jac[ispec];
 		}
