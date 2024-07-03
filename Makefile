@@ -24,11 +24,11 @@ LVG_LRT.exe :
 #	c++ -std=c++17 -Wall -O3 -mtune=native -mavx2 -DUSE_LAPACKE -DMKL_ILP64 -m64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -Wl,--no-as-needed -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
 #	c++ -std=c++17 -Wall -O3 -mtune=native -mavx2 -DUSE_LAPACKE -DMKL_ILP64 -m64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -Wl,--no-as-needed -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
 #
-#	icpc -std=c++17 -Wall -O3 -xCORE-AVX2 -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib/intel64 -lmkl_rt -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
-#	icpc -std=c++17 -Wall -O3 -xCORE-AVX2 -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib/intel64 -lmkl_rt -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
+#	icpc -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib/intel64 -lmkl_rt -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
+#	icpc -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib/intel64 -lmkl_rt -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
 #
-#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
-#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
+#	icpx -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
+#	icpx -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -I"${MKLROOT}/include" -L${MKLROOT}/lib -lmkl_rt -lpthread -lm -ldl -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
 #
-#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
-#	icpx -std=c++17 -Wall -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
+#	icpx -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o LVG_LRT.exe src/LVG_LRT.cpp src/stdafx.cpp src/cubature/hcubature.c
+#	icpx -std=c++17 -Wall -fp-model=precise -O3 -xCORE-AVX2 -flto -DUSE_LAPACKE -DMKL_ILP64 -qmkl-ilp64=sequential -o pupmpit.exe src/pupmpit.cpp src/stdafx.cpp
