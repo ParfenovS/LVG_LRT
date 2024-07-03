@@ -294,8 +294,8 @@ public:
 						double DFnormDrate2 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
 						if (DFnormDrate1 * DFnormDrate2 > 0.0 || DFnormDrate1 > 0.0 || DFnormDrate2 < 0.0) break;
 						rate = (rate1 + rate2) * 0.5;
-						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate - 2 * rate_step), LVG_beta, &mols[ispec]);
-						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate, LVG_beta, &mols[ispec]);
+						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate - rate_step), LVG_beta, &mols[ispec]);
+						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate + rate_step), LVG_beta, &mols[ispec]);
 						double DFnormDrate = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
 						if (DFnormDrate < 0.0) rate1 = rate;
 						else rate2 = rate;
