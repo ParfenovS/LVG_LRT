@@ -281,11 +281,11 @@ public:
 					}
 				}
 				if (rate < 0.99) rate *= 0.9;
-				if (rate >= MIN_NEWT_SCALE) {
+				if (rate > MIN_NEWT_SCALE) {
 					double rate1 = MIN_NEWT_SCALE;
 					double rate2 = rate;
-					double rate_step = (rate2 - rate1) * MAX_NEWT_SCALE_STEP;
-					do {
+					const double rate_step = (rate2 - rate1) * MAX_NEWT_SCALE_STEP;
+					/*do {
 						double Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate1, LVG_beta, &mols[ispec]);
 						double Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate1 + 2 * rate_step), LVG_beta, &mols[ispec]);
 						double DFnormDrate1 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
@@ -299,7 +299,17 @@ public:
 						double DFnormDrate = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
 						if (DFnormDrate < 0.0) rate1 = rate;
 						else rate2 = rate;
-					} while (2 * fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));
+					} while (2 * fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));*/
+					double temp_rate = rate1;
+					double min_Fnorm = 1.e60;
+					do {
+						double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, LVG_beta, &mols[ispec]);
+						if (temp_Fnorm < min_Fnorm) {
+							min_Fnorm = temp_Fnorm;
+							rate = temp_rate;
+						}
+						temp_rate += rate_step;
+					} while (temp_rate <= rate2);
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = rate * dpop[ispec][i] + mols[ispec].levels[i].pop;
 				} else { // use simple iteration if Newton step is too small
 					solveStatEqSuccess = solve_eq_sys(A[ispec], pop[ispec], &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
