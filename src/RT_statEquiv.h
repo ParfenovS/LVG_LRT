@@ -299,7 +299,7 @@ public:
 						double DFnormDrate = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
 						if (DFnormDrate < 0.0) rate1 = rate;
 						else rate2 = rate;
-					} while (2 * fabs(rate2 - rate1) > NEWT_SCALE_ACCURACY * (rate2 + rate1));*/
+					} while (2 * fabs(rate2 - rate1) > 1.e-2 * (rate2 + rate1));*/
 					double temp_rate = rate1;
 					double min_Fnorm = 1.e60;
 					do {
