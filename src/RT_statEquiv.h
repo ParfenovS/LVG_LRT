@@ -118,16 +118,14 @@ private:
 	double getF(double A[], double pop[], double temp_pop[], double dpop[], const double & rate, beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
 	{
 		const size_t& n = mol->levels.size();
-		for (size_t i = 0; i < n; i++) {
-			pop[i] = mol->levels[i].pop + rate * dpop[i];
-			temp_pop[i] = mol->levels[i].pop;
-			mol->levels[i].pop = pop[i];
-		}
 
 		// A[i + j*n] - rate of transition from j-th to i-th level
 		// Collisional transitions
 		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
 		for (size_t i = 0; i < n; i++) {
+			pop[i] = mol->levels[i].pop + rate * dpop[i];
+			temp_pop[i] = mol->levels[i].pop;
+			mol->levels[i].pop = pop[i];
 			A[i + i * n] = -mol->coll_trans[i][i];
 			for (size_t j = i + 1; j < n; j++) {
 				A[i + j * n] = mol->coll_trans[j][i];
@@ -158,14 +156,14 @@ private:
 		double F;
 		for (size_t i = n; i-- > 1; ) {
 			F = 0.0;
-			for (size_t j = n; j-- > 0; ) F += A[i + j * n] * mol->levels[j].pop;
-			pops_sum += mol->levels[i].pop;
+			for (size_t j = n; j-- > 0; ) F += A[i + j * n] * pop[j];
+			pops_sum += pop[i];
 			Fnorm += F * F;
+			mol->levels[i].pop = temp_pop[i];
 		}
-		double F0 = this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop);
+		mol->levels[0].pop = temp_pop[0];
+		double F0 = this->partition_function_ratio[mol->idspec] - (pops_sum + pop[0]);
 		Fnorm += F0 * F0;
-
-		for (size_t i = 0; i < n; i++) mol->levels[i].pop = temp_pop[i];
 
 		return sqrt(Fnorm);
 	}
