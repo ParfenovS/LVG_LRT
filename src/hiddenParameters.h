@@ -38,5 +38,4 @@
 //#define PARTITION_FUNCTION {(0.03087 * pow(modelPhysPars::Tks, 1.48437))}   // HDO full partition rotational function (this is an approximation based on the data from JPL database)
 //#define PARTITION_FUNCTION {(1.72916 * pow(modelPhysPars::Tks, 1.47515))}   // HNCO full partition rotational function
 //#define PARTITION_FUNCTION {(0.5*0.1238 * pow(modelPhysPars::Tks, 1.4834))}   // NH3 full partition rotational function from JPL for the temperature range from 75 to 300, the function is divided by 2 assuming equal abundances of o-NH3 and p-NH3
-//#define PARTITION_FUNCTION {exp( 3.0176 - 0.92589 * log(modelPhysPars::Tks) + 0.99905 * pow(log(modelPhysPars::Tks), 2.0) - 0.19118 * pow(log(modelPhysPars::Tks), 3.0) + 0.014031 * pow(log(modelPhysPars::Tks), 4.0) )}          // CH3CN partition rotational function (this is an approximation based on the data from CDMS database in the temperature range from 10 to 500 K)
 //#define PARTITION_FUNCTION {(3.89 * pow(modelPhysPars::Tks, 1.5) / pow(1. - exp(-524.8 / modelPhysPars::Tks), 2.))}          // CH3CN partition function from Araya et al. (2005)
