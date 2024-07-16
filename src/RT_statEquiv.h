@@ -53,19 +53,29 @@ private:
 			const size_t& up = mol->rad_trans[i].up_level;
 			const size_t& low = mol->rad_trans[i].low_level;
 
+			double blend_demiss_dnlow = 0.0;								// derivative of emission coefficient on population of the lower level of radiative transition taking into account line blending
+			double blend_dkabs_dnlow = mol->rad_trans[i].Blu;				// derivative of absorption coefficient on population of the lower level of radiative transition taking into account line blending
+			double blend_demiss_dnup = mol->rad_trans[i].A;								// derivative of emission coefficient on population of the upper level of radiative transition taking into account line blending
+			double blend_dkabs_dnup = -mol->rad_trans[i].Bul;				// derivative of absorption coefficient on population of the upper level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				if (mol->idspec == mol->rad_trans[i].blends[j].ispec) {
+					if (low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level) {
+						blend_demiss_dnlow += mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
+						blend_dkabs_dnlow -= mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
+					}
+					if (low == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level) blend_dkabs_dnlow += mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
+					if (up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level) {
+						blend_demiss_dnup += mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
+						blend_dkabs_dnup -= mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
+					}
+					if (up == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level) blend_dkabs_dnup += mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
+				}
+			}
+
 			temp_var = mol->rad_trans[i].Blu * mol->rad_trans[i].J;
 			A[up + low * n] += temp_var;                                   	// A[up][low] += Blu * J
 			A[low + low * n] -= temp_var;    									// A[low][low] -= Blu * J
 
-			double blend_demiss_dnlow = 0.0;								// derivative of emission coefficient on population of the lower level of radiative transition taking into account line blending
-			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
-				blend_demiss_dnlow += (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
-			}
-			double blend_dkabs_dnlow = mol->rad_trans[i].Blu;				// derivative of absorption coefficient on population of the lower level of radiative transition taking into account line blending
-			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
-				blend_dkabs_dnlow += (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
-				blend_dkabs_dnlow -= (int)(low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
-			}
 			double dS_dnlow_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnlow - Sf * blend_dkabs_dnlow);	// derivative of source function on population of the lower level of radiative transition * (1 - beta)
 			if (fabs(kabs) > 0.0) dS_dnlow_beta *= (1. - beta) / kabs;
 			else dS_dnlow_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
@@ -78,15 +88,6 @@ private:
 			A[low + up * n] += temp_var;                                   	// A[low][up] += Aul + Bul * J
 			A[up + up * n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
 
-			double blend_demiss_dnup = mol->rad_trans[i].A;								// derivative of emission coefficient on population of the upper level of radiative transition taking into account line blending
-			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
-				blend_demiss_dnup += (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].A * mol->rad_trans[i].blends[j].fac;
-			}
-			double blend_dkabs_dnup = -mol->rad_trans[i].Bul;				// derivative of absorption coefficient on population of the upper level of radiative transition taking into account line blending
-			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
-				blend_dkabs_dnup += (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * mol->rad_trans[i].blends[j].fac;
-				blend_dkabs_dnup -= (int)(up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level && mol->idspec == mol->rad_trans[i].blends[j].ispec) * mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * mol->rad_trans[i].blends[j].fac;
-			}
 			double dS_dnup_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnup - Sf * blend_dkabs_dnup);	// derivative of source function on population of the upper level of radiative transition * (1 - beta)
 			if (fabs(kabs) > 0.0) dS_dnup_beta *= (1. - beta) / kabs;
 			else dS_dnup_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
@@ -102,16 +103,17 @@ private:
 			F[i] = 0.0;
 			for (size_t j = n; j-- > 0; ) F[i] += A[i + j * n] * mol->levels[j].pop;
 			F[i] = - F[i];
-			Jac[0 + i * n] = 1.0;
+			Jac[0 + i * n] = Jac[0];
 			pops_sum += mol->levels[i].pop;
 			A[0 + i * n] = A[0];
 			B[i] = 0.0;
 			Fnorm += F[i] * F[i];
 		}
-		Jac[0] = 1.0;
-		F[0] = this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop);
+		//Jac[0] = 1.0;
+		F[0] = Jac[0] * (this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop));
 		Fnorm += F[0] * F[0];
 		B[0] = A[0] * this->partition_function_ratio[mol->idspec]; // the sum of populations should be = partition functions ratio or = 1 multiplied by A[0][0] for numerical stability
+		for (size_t i = 0; i < n; i++) Jac[i + i * n] += Fnorm;
 		return sqrt(Fnorm);
 	}
 
@@ -223,28 +225,24 @@ public:
 			}
 		}
 
-		vector <double*> pop;
-		pop.reserve(modelPhysPars::nSpecies);
+		vector <vector <double> > pop(modelPhysPars::nSpecies);
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			pop.push_back(new double[mols[ispec].levels.size()]);
+			pop[ispec].resize(mols[ispec].levels.size());
 		}
 
-		vector <double*> dpop;
-		dpop.reserve(modelPhysPars::nSpecies);
+		vector <vector <double> > dpop(modelPhysPars::nSpecies);
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			dpop.push_back(new double[mols[ispec].levels.size()]);
+			dpop[ispec].resize(mols[ispec].levels.size());
 		}
 
-		vector <double*> A; 	// reserve space for matrix A from the statistical equilibrium equations system A*X=B
-		A.reserve(modelPhysPars::nSpecies);
+		vector <vector <double> > A(modelPhysPars::nSpecies); // reserve space for matrix A from the statistical equilibrium equations system A*X=B
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			A.push_back(new double[mols[ispec].levels.size()*mols[ispec].levels.size()]);
+			A[ispec].resize(mols[ispec].levels.size() * mols[ispec].levels.size());
 		}
 
-		vector <double*> Jac; 	// reserve space for Jacobian
-		Jac.reserve(modelPhysPars::nSpecies);
+		vector <vector <double> > Jac(modelPhysPars::nSpecies); // reserve space for Jacobian
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			Jac.push_back(new double[mols[ispec].levels.size()*mols[ispec].levels.size()]);
+			Jac[ispec].resize(mols[ispec].levels.size() * mols[ispec].levels.size());
 		}
 
 		double MaxRPopDiff;
@@ -256,18 +254,11 @@ public:
 		do {
 			Fnorm = 0.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				double tempFnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], LVG_beta, &mols[ispec]);
+				double tempFnorm = populate_matrix_vector(A[ispec].data(), Jac[ispec].data(), dpop[ispec].data(), pop[ispec].data(), LVG_beta, &mols[ispec]);
 				if (tempFnorm > Fnorm) Fnorm = tempFnorm;
-				//double cond_number = get_condition_number(A[ispec], &mols[ispec]);
-				size_t solveStatEqSuccess = solve_eq_sys(Jac[ispec], dpop[ispec], &mols[ispec]);		// solve the equation system Jac*dpop = -F
+				//double cond_number = get_condition_number(A[ispec].data(), &mols[ispec]);
+				size_t solveStatEqSuccess = solve_eq_sys(Jac[ispec].data(), dpop[ispec].data(), &mols[ispec]);		// solve the equation system Jac*dpop = -F
 				if (solveStatEqSuccess != 0) {						// the solution can't be found
-					for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
-						delete[] pop[ispec1];
-						delete[] dpop[ispec1];
-						delete[] A[ispec1];
-						delete[] Jac[ispec1];
-					}
-					oldpops_Ng.clear();
 					cerr << "#error: Newton solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 					return 1;
 				}
@@ -301,24 +292,18 @@ public:
 					double temp_rate = rate1;
 					double min_Fnorm = 1.e60;
 					do {
-						double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, LVG_beta, &mols[ispec]);
+						double temp_Fnorm = getF(A[ispec].data(), Jac[ispec].data(), pop[ispec].data(), dpop[ispec].data(), temp_rate, LVG_beta, &mols[ispec]);
 						if (temp_Fnorm < min_Fnorm) {
 							min_Fnorm = temp_Fnorm;
 							rate = temp_rate;
 						}
 						temp_rate += rate_step;
 					} while (temp_rate <= rate2);
+					if (rate <= MIN_NEWT_SCALE + rate_step) rate = rate2;
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = rate * dpop[ispec][i] + mols[ispec].levels[i].pop;
 				} else { // use simple iteration if Newton step is too small
-					solveStatEqSuccess = solve_eq_sys(A[ispec], pop[ispec], &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
+					solveStatEqSuccess = solve_eq_sys(A[ispec].data(), pop[ispec].data(), &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
 					if (solveStatEqSuccess != 0) {						// the solution can't be found
-						for (size_t ispec1 = 0; ispec1 < modelPhysPars::nSpecies; ispec1++) {
-							delete[] pop[ispec1];
-							delete[] dpop[ispec1];
-							delete[] A[ispec1];
-							delete[] Jac[ispec1];
-						}
-						oldpops_Ng.clear();
 						cerr << "#error: simple iteration solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 						return 1;
 					}
@@ -329,21 +314,13 @@ public:
 			speciesWithMaxRPopDiff = 0;
 			MaxRPopDiff = -1.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				update_check_pops(&mols[ispec], pop[ispec], speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng[ispec], dummy_pop_norm);
+				update_check_pops(&mols[ispec], pop[ispec].data(), speciesWithMaxRPopDiff, levelWithMaxRPopDiff, MaxRPopDiff, iter, oldpops_Ng[ispec], dummy_pop_norm);
 			}
 			if (cerr_output_iter_progress) {
 				cerr << iter << " Fnorm= " << Fnorm << " max.dev.= " << MaxRPopDiff << " mol/level with max.dev.= " << speciesWithMaxRPopDiff << " / " <<levelWithMaxRPopDiff << endl;
 			}
 			iter += 1;
 		} while (Fnorm > FNORM_STOPPING && MaxRPopDiff > MAX_DpopsDt_EPS && iter <= maxNumberOfIterations);
-
-		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-			delete[] pop[ispec];
-			delete[] dpop[ispec];
-			delete[] A[ispec];
-			delete[] Jac[ispec];
-		}
-		oldpops_Ng.clear();
 
 		if (iter > maxNumberOfIterations) cerr << "#warning: maximum number of iterations has exceeded Fnorm= " << Fnorm << " max.dev.= " << MaxRPopDiff << " level with max.dev.= " << levelWithMaxRPopDiff << endl;
 		
