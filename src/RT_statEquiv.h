@@ -274,21 +274,6 @@ public:
 					double rate1 = MIN_NEWT_SCALE;
 					double rate2 = rate;
 					const double rate_step = (rate2 - rate1) * MAX_NEWT_SCALE_STEP;
-					/*do {
-						double Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate1, LVG_beta, &mols[ispec]);
-						double Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate1 + 2 * rate_step), LVG_beta, &mols[ispec]);
-						double DFnormDrate1 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
-						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate2 - 2 * rate_step), LVG_beta, &mols[ispec]);
-						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate2, LVG_beta, &mols[ispec]);
-						double DFnormDrate2 = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
-						if (DFnormDrate1 * DFnormDrate2 > 0.0 || DFnormDrate1 > 0.0 || DFnormDrate2 < 0.0) break;
-						rate = (rate1 + rate2) * 0.5;
-						Fnorm1 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate - rate_step), LVG_beta, &mols[ispec]);
-						Fnorm2 = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], (rate + rate_step), LVG_beta, &mols[ispec]);
-						double DFnormDrate = 0.5 * (Fnorm2 - Fnorm1) / rate_step;
-						if (DFnormDrate < 0.0) rate1 = rate;
-						else rate2 = rate;
-					} while (2 * fabs(rate2 - rate1) > 1.e-2 * (rate2 + rate1));*/
 					double temp_rate = rate1;
 					double min_Fnorm = 1.e60;
 					do {
@@ -299,7 +284,7 @@ public:
 						}
 						temp_rate += rate_step;
 					} while (temp_rate <= rate2);
-					if (rate <= MIN_NEWT_SCALE + rate_step) rate = rate2;
+					//if (rate <= MIN_NEWT_SCALE + rate_step) rate = rate2;
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = rate * dpop[ispec][i] + mols[ispec].levels[i].pop;
 				} else { // use simple iteration if Newton step is too small
 					solveStatEqSuccess = solve_eq_sys(A[ispec].data(), pop[ispec].data(), &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
