@@ -23,7 +23,7 @@ private:
 		return cond_number;
 	}
 
-	double populate_matrix_vector(double A[], double Jac[], double F[], double B[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	double populate_matrix_vector(double A[], double Jac[], double F[], double B[], double fscale2[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
 	{
 		const size_t& n = mol->levels.size();
 
@@ -99,6 +99,7 @@ private:
 
 		double pops_sum = 0.0;
 		double Fnorm = 0.0;
+		double Fnorm_non_scaled = 0.0;
 		for (size_t i = n; i-- > 1; ) {
 			F[i] = 0.0;
 			for (size_t j = n; j-- > 0; ) F[i] += A[i + j * n] * mol->levels[j].pop;
@@ -107,17 +108,19 @@ private:
 			pops_sum += mol->levels[i].pop;
 			A[0 + i * n] = A[0];
 			B[i] = 0.0;
-			Fnorm += F[i] * F[i];
+			Fnorm_non_scaled += F[i] * F[i];
+			Fnorm += F[i] * F[i] * fscale2[i];
 		}
 		//Jac[0] = 1.0;
 		F[0] = Jac[0] * (this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop));
-		Fnorm += F[0] * F[0];
+		Fnorm_non_scaled += F[0] * F[0];
+		Fnorm += F[0] * F[0] * fscale2[0];
 		B[0] = A[0] * this->partition_function_ratio[mol->idspec]; // the sum of populations should be = partition functions ratio or = 1 multiplied by A[0][0] for numerical stability
-		for (size_t i = 0; i < n; i++) Jac[i + i * n] += Fnorm;
+		for (size_t i = 0; i < n; i++) Jac[i + i * n] += Fnorm_non_scaled; // see e.g. https://www.sciencedirect.com/science/article/pii/S2211379721011037?via%3Dihub
 		return sqrt(Fnorm);
 	}
 
-	double getF(double A[], double pop[], double temp_pop[], double dpop[], const double & rate, beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	double getF(double A[], double pop[], double temp_pop[], double dpop[], const double & rate, double fscale2[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
 	{
 		const size_t& n = mol->levels.size();
 
@@ -160,14 +163,64 @@ private:
 			F = 0.0;
 			for (size_t j = n; j-- > 0; ) F += A[i + j * n] * pop[j];
 			pops_sum += pop[i];
-			Fnorm += F * F;
+			Fnorm += F * F * fscale2[i];
 			mol->levels[i].pop = temp_pop[i];
 		}
 		mol->levels[0].pop = temp_pop[0];
-		double F0 = this->partition_function_ratio[mol->idspec] - (pops_sum + pop[0]);
-		Fnorm += F0 * F0;
+		F = this->partition_function_ratio[mol->idspec] - (pops_sum + pop[0]);
+		Fnorm += F * F * fscale2[0];
 
 		return sqrt(Fnorm);
+	}
+
+	void getFscale(double A[], double pop[], double fscale2[], beta_LVG& LVG_beta, molModel* mol)	// fill the matrix A, vector B from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	{
+		const size_t& n = mol->levels.size();
+
+		// A[i + j*n] - rate of transition from j-th to i-th level
+		// Collisional transitions
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
+		for (size_t i = 0; i < n; i++) {
+			A[i + i * n] = -mol->coll_trans[i][i];
+			for (size_t j = i + 1; j < n; j++) {
+				A[i + j * n] = mol->coll_trans[j][i];
+				A[j + i * n] = mol->coll_trans[i][j];
+			}
+		}
+
+		// Radiative transitions
+		double temp_var, Sf, beta, kabs;
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			compute_tau(i, mol);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
+			
+			const size_t& up = mol->rad_trans[i].up_level;
+			const size_t& low = mol->rad_trans[i].low_level;
+
+			temp_var = mol->rad_trans[i].Blu * mol->rad_trans[i].J;
+			A[up + low * n] += temp_var;                                   	// A[up][low] += Blu * J
+			A[low + low * n] -= temp_var;    									// A[low][low] -= Blu * J
+
+			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
+			A[low + up * n] += temp_var;                                   	// A[low][up] += Aul + Bul * J
+			A[up + up * n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
+		}
+
+		double pops_sum = 0.0;
+		double Fnorm = 0.0;
+		double F;
+		for (size_t i = n; i-- > 1; ) {
+			F = 0.0;
+			for (size_t j = n; j-- > 0; ) F += A[i + j * n] * mol->levels[j].pop;
+			pops_sum += pop[i];
+			F = F * F;
+			if (F > 0.0) fscale2[i] = 1.0 / F;
+			else fscale2[i] = 1.0;
+		}
+		F = this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop);
+		F = F * F;
+		if (F > 0.0) fscale2[0] = 1.0 / F;
+		else fscale2[0] = 1.0;
 	}
 
 	void prepare_results_for_output(beta_LVG & LVG_beta)
@@ -235,6 +288,11 @@ public:
 			dpop[ispec].resize(mols[ispec].levels.size());
 		}
 
+		vector <vector <double> > fscale2(modelPhysPars::nSpecies);
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+			fscale2[ispec].resize(mols[ispec].levels.size());
+		}
+
 		vector <vector <double> > A(modelPhysPars::nSpecies); // reserve space for matrix A from the statistical equilibrium equations system A*X=B
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 			A[ispec].resize(mols[ispec].levels.size() * mols[ispec].levels.size());
@@ -245,6 +303,8 @@ public:
 			Jac[ispec].resize(mols[ispec].levels.size() * mols[ispec].levels.size());
 		}
 
+		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) getFscale(A[ispec].data(), pop[ispec].data(), fscale2[ispec].data(), LVG_beta, &mols[ispec]);
+
 		double MaxRPopDiff;
 		size_t levelWithMaxRPopDiff;
 		size_t speciesWithMaxRPopDiff;
@@ -254,7 +314,7 @@ public:
 		do {
 			Fnorm = 0.0;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				double tempFnorm = populate_matrix_vector(A[ispec].data(), Jac[ispec].data(), dpop[ispec].data(), pop[ispec].data(), LVG_beta, &mols[ispec]);
+				double tempFnorm = populate_matrix_vector(A[ispec].data(), Jac[ispec].data(), dpop[ispec].data(), pop[ispec].data(), fscale2[ispec].data(), LVG_beta, &mols[ispec]);
 				if (tempFnorm > Fnorm) Fnorm = tempFnorm;
 				//double cond_number = get_condition_number(A[ispec].data(), &mols[ispec]);
 				size_t solveStatEqSuccess = solve_eq_sys(Jac[ispec].data(), dpop[ispec].data(), &mols[ispec]);		// solve the equation system Jac*dpop = -F
@@ -262,14 +322,14 @@ public:
 					cerr << "#error: Newton solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 					return 1;
 				}
-				double rate = 0.99; // see kinsol package for the step length calculations according to the bounds on the solution vector, https://github.com/LLNL/sundials/tree/main/src/kinsol
+				double rate = 1.0; // see kinsol package for the step length calculations according to the bounds on the solution vector, https://github.com/LLNL/sundials/tree/main/src/kinsol
 				for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
 					double cur_pop = dpop[ispec][i] + mols[ispec].levels[i].pop;
 					if ((cur_pop <= 0.0 || cur_pop > 1.0) && fabs(dpop[ispec][i]) > 0.0) {
 						rate = min(rate, mols[ispec].levels[i].pop / fabs(dpop[ispec][i]));
 					}
 				}
-				if (rate < 0.99) rate *= 0.9;
+				if (rate < 1.0) rate *= 0.9;
 				if (rate > MIN_NEWT_SCALE) {
 					double rate1 = MIN_NEWT_SCALE;
 					double rate2 = rate;
@@ -277,7 +337,7 @@ public:
 					double temp_rate = rate1;
 					double min_Fnorm = 1.e60;
 					do {
-						double temp_Fnorm = getF(A[ispec].data(), Jac[ispec].data(), pop[ispec].data(), dpop[ispec].data(), temp_rate, LVG_beta, &mols[ispec]);
+						double temp_Fnorm = getF(A[ispec].data(), Jac[ispec].data(), pop[ispec].data(), dpop[ispec].data(), temp_rate, fscale2[ispec].data(), LVG_beta, &mols[ispec]);
 						if (temp_Fnorm < min_Fnorm) {
 							min_Fnorm = temp_Fnorm;
 							rate = temp_rate;
