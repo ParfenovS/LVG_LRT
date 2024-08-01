@@ -207,7 +207,6 @@ private:
 		}
 
 		double pops_sum = 0.0;
-		double Fnorm = 0.0;
 		double F;
 		for (size_t i = n; i-- > 1; ) {
 			F = 0.0;
