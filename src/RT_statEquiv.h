@@ -101,18 +101,24 @@ private:
 		double Fnorm = 0.0;
 		for (size_t i = n; i-- > 1; ) {
 			F[i] = 0.0;
-			for (size_t j = n; j-- > 0; ) F[i] += A[i + j * n] * mol->levels[j].pop;
+			double Fi = 0.0;
+			double norm_fac = 1.0 / fabs(Jac[i + i * n]);
+			for (size_t j = n; j-- > 0; ) {
+				Fi += A[i + j * n] * mol->levels[j].pop;
+				F[i] += A[i + j * n] * mol->levels[j].pop * norm_fac;
+				Jac[i + j * n] *= norm_fac;
+			}
 			F[i] = - F[i];
-			Jac[0 + i * n] = Jac[0];
+			Jac[0 + i * n] = 1.0;
 			pops_sum += mol->levels[i].pop;
-			A[0 + i * n] = A[0];
+			A[0 + i * n] = 1.0;
 			B[i] = 0.0;
-			Fnorm += F[i] * F[i];
+			Fnorm += Fi * Fi;
 		}
-		//Jac[0] = 1.0;
-		F[0] = Jac[0] * (this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop));
+		Jac[0] = 1.0;
+		F[0] = this->partition_function_ratio[mol->idspec] - (pops_sum + mol->levels[0].pop);
 		Fnorm += F[0] * F[0];
-		B[0] = A[0] * this->partition_function_ratio[mol->idspec]; // the sum of populations should be = partition functions ratio or = 1 multiplied by A[0][0] for numerical stability
+		B[0] = this->partition_function_ratio[mol->idspec]; // the sum of populations should be = partition functions ratio or = 1 multiplied by A[0][0] for numerical stability
 		for (size_t i = 0; i < n; i++) Jac[i + i * n] += Fnorm; // see e.g. https://www.sciencedirect.com/science/article/pii/S2211379721011037?via%3Dihub
 		return sqrt(Fnorm);
 	}
