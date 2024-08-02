@@ -7,7 +7,7 @@
 //
 #define MIN_NEWT_SCALE pow(DBL_EPSILON, (1./3.))        // minimum value of the Newton step scale
 #define MAX_NEWT_SCALE_STEP 1.e-2                       // maximum step of the Newton step scale to find the numerical derivative of the objective function
-#define FNORM_STOPPING pow(DBL_EPSILON, (1./3.))        // the nonlinear solver will stop when the norm of the function is lower than this value, see kinsol package for the default value, https://sundials.readthedocs.io/en/latest/kinsol/Mathematics_link.html
+#define FNORM_STOPPING 1.e-16                           // the nonlinear solver will stop when the norm of the function is lower than this value
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
 #define BETA_NUM_SPLINE_POINTS 10000                    // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
