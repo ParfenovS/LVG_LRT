@@ -5,14 +5,15 @@
                               //= 2                     // expanding sphere (LVG) as in RADEX
                               //= 3                     // plane parallel slab (shock) as in RADEX
 //
-#define MIN_NEWT_SCALE pow(DBL_EPSILON, (1./3.))        // minimum value of the Newton step scale
-#define MAX_NEWT_SCALE_STEP 1.e-2                       // maximum step of the Newton step scale to find the numerical derivative of the objective function
-#define FNORM_STOPPING 1.e-16                           // the nonlinear solver will stop when the norm of the function is lower than this value
+#define MIN_NEWT_SCALE pow(DBL_EPSILON, (2./3.))        // minimum value of the Newton step scale, see kinsol package for the minimum step length
+#define NUM_OF_NEWT_SCALE_GRID_POINTS 10                // the number of points in the grid of Newton step scales used for linesearch
+#define NUM_OF_NEWT_SCALE_GRID_REFINEMENTS 4            // the number of refinements of the grid of Newton step scales
+#define DEFAULT_FNORM_STOPPING pow(DBL_EPSILON, (1./3.)) // the nonlinear solver will stop when the norm of the function is lower than this default value, see kinsol package for the default value
 #define MIN_TAU -30.0                                   // minimum allowed optical depth
 #define BETA_ACCURACY 1.e-8                             // relative accuracy that is used for integration of escape probability over angles in beta_LVG.h file
 #define BETA_NUM_SPLINE_POINTS 10000                    // a half of the number of points that will be used to construct the spline approximating the dependence of escape probability on optical depth (beta_LVG.h)
 #define MIN_POP_FOR_DIFF_CALC 1.e-14                    // the levels with population below this limit will not be taken into account in calculations of the maximum difference between lev. pops. during local fixed point iterations
-#define MIN_POP 1.e-60                                  // the populations can't be lower than this value
+#define MIN_POP 1.e-80                                  // the populations can't be lower than this value
 #define MAX_POP (1.0-1000*DBL_EPSILON)                  // the populations can't be higher than this value
 #define Ng_order 2                                      // the order of Ng acceleration
 #define Ng_start (Ng_order + 1)                         // the iteration number after which Ng acceleration will be switched on
