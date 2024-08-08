@@ -28,7 +28,7 @@ COLLISION_PARTNERS_FRACTIONS = [0.2, 1.0]  # partners for HNCO: He , H2
 INITIAL_SOLUTION = 2 # 0 - from file; 1 - optically thin; 2 - LTE
 INITIAL_SOLUTION_FILENAME = "Populations/Pn.txt"
 FILE_WITH_LAMDA_DATA = "hnco.dat"
-MAXIMUM_DpopDt_OR_popDiff = 1.e-10
+MAXIMUM_DpopDt = -1 # < 0 means that the code will use the default value for the length of Dpop/Dt vector after which iterations will stop
 MAXIMUM_NUMBER_OF_ITERATIONS = 5000000
 BEAMING = [1.0]
 LINE_WIDTH = 0.1
@@ -199,7 +199,7 @@ def prepare_input(pars, in_pops_file="", out_pops_file=""):
     cin += "# Stopping criteria:\n"
     cin += "# maximum length of Dn/Dt vector where		| maximum number of\n"
     cin += "# Dn/Dt - time derivative of populations    | iterations\n"
-    cin += str(MAXIMUM_DpopDt_OR_popDiff) + "\t" + str(MAXIMUM_NUMBER_OF_ITERATIONS) + "\n"
+    cin += str(MAXIMUM_DpopDt) + "\t" + str(MAXIMUM_NUMBER_OF_ITERATIONS) + "\n"
     cin += "#\n"
     cin += "# beamH, beaming for optical depth parallel to the line of sight\n"
     cin += "# this is eps^-1 = D(ln r) / D(ln V) quantity given in e.g. Sobolev et al. 1997, Cragg et al. 2005\n"
