@@ -11,9 +11,9 @@ Results/pops_oh2co.txt
 ph2co-h2.dat
 oh2co-h2.dat
 # Stopping criteria:
-# maximum relative population		| maximum number of
-# difference or length of Dpop/Dt vector| iterations or time steps
-1.e-6				  	  100000
+# maximum length of Dpop/Dt vector	| maximum number of
+# set it < 0 to use the default value	| iterations or time steps
+-1				  	  100000
 #
 # beamH, beaming for optical depth parallel to the line of sight
 # this is eps^-1 = D(ln r) / D(ln V) quantity given in e.g. Sobolev et al. 1997, Cragg et al. 2005
