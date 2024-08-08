@@ -65,6 +65,7 @@ protected:
 		for (short i = 0; i < 4; i++) getline(fin, str);
 		sfin.str(trim(str));
 		sfin >> MAX_DpopsDt_EPS >> maxNumberOfIterations;
+		if (MAX_DpopsDt_EPS < 0.0) MAX_DpopsDt_EPS = DEFAULT_FNORM_STOPPING;
 		sfin.clear();
 		if (MAX_DpopsDt_EPS < DBL_EPSILON)
 			throw runtime_error("maximum length of Dn/Dt vector in Parameters/RadiativeTransfer.txt file or console input should be larger than machine epsilon");
@@ -287,8 +288,9 @@ protected:
 		mol->rad_trans[i].Tbr = (THii_infront - THii_infront_cont) * (pow(SPEED_OF_LIGHT/nu, 2.0) / (2. * BOLTZMANN_CONSTANT));
 	}
 
-	void find_blends() 	// searching for overlapped lines, only local overlapping is taken into account
+	bool find_blends() 	// searching for overlapped lines, only local overlapping is taken into account
 	{
+		bool there_are_blends = false;
 		std::function<double(const double &)> profile_shape = [](const double & velf) -> double { return 0.0; };
 		if (line_profile_shape == "r") { 	// choosing line profile shape
 			profile_shape = [this](const double & velf) -> double {
@@ -317,6 +319,7 @@ protected:
 					if (vel_fac < lineWidth) {
 						mols[ispec0].rad_trans[i].add_overlapped_line(ispec0, j, profile_shape(vel_fac));
 						mols[ispec0].rad_trans[j].add_overlapped_line(ispec0, i, profile_shape(vel_fac));
+						there_are_blends = true;
 					}
 				}
 			}
@@ -336,12 +339,14 @@ protected:
 							}
 							if (vel_fac < lineWidth) {
 								mols[ispec0].rad_trans[i].add_overlapped_line(ispec, j, profile_shape(vel_fac));
+								there_are_blends = true;
 							}
 						}
 					}
 				}
 			}
 		}
+		return there_are_blends;
 	}
 
 	void Ng_acceleration(double pop[], vector <vector <double> > & oldpops, molModel *mol)
@@ -415,30 +420,28 @@ protected:
 			}
 		}
 		if (MaxRPopDiff < 0) there_were_bad_levels = true;
-		if (!there_were_bad_levels) {
-			if (DoNg && iter > Ng_start) {
-				vector<double> temp_pop;
-				for (size_t i = 0; i < mol->levels.size(); i++) temp_pop.push_back(max(pop[i], MIN_POP));
-				Ng_acceleration(pop, oldpops_Ng, mol);
-				for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
-				temp_pop.clear();
-			}
-			double pops_sum = 0;
-			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				mol->levels[i].pop = max(pop[i], MIN_POP);
-				pops_sum += mol->levels[i].pop;
-			}
-			pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
-			for (size_t i = mol->levels.size(); i-- > 0; ) {
-				mol->levels[i].pop *= pops_sum;
-				pop_norm += mol->levels[i].pop * mol->levels[i].pop;
-				for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
-				if (!(DoNg && iter > Ng_start)) {
-					oldpops_Ng[i][Ng_order + 1] = max(pop[i], MIN_POP);
-				}
-			}
-			pop_norm = sqrt(pop_norm);
+		if (DoNg && iter > Ng_start && !there_were_bad_levels) {
+			vector<double> temp_pop;
+			for (size_t i = 0; i < mol->levels.size(); i++) temp_pop.push_back(max(pop[i], MIN_POP));
+			Ng_acceleration(pop, oldpops_Ng, mol);
+			for (size_t i = 0; i < mol->levels.size(); i++) oldpops_Ng[i][Ng_order + 1] = temp_pop[i];
+			temp_pop.clear();
 		}
+		double pops_sum = 0;
+		for (size_t i = mol->levels.size(); i-- > 0; ) {
+			mol->levels[i].pop = max(pop[i], MIN_POP);
+			pops_sum += mol->levels[i].pop;
+		}
+		pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
+		for (size_t i = mol->levels.size(); i-- > 0; ) {
+			mol->levels[i].pop *= pops_sum;
+			pop_norm += mol->levels[i].pop * mol->levels[i].pop;
+			for (size_t olp_i = 0; olp_i < (Ng_order + 1); olp_i++) oldpops_Ng[i][olp_i] = oldpops_Ng[i][olp_i + 1];
+			if (!(DoNg && iter > Ng_start)) {
+				oldpops_Ng[i][Ng_order + 1] = max(pop[i], MIN_POP);
+			}
+		}
+		pop_norm = sqrt(pop_norm);
 		return there_were_bad_levels;
 	}
 
@@ -462,7 +465,7 @@ protected:
 		this->invlineWidth = 1.0;
 		this->maxNumberOfIterations = 1;
 		this->initialSolutionSource = 2;
-		this->MAX_DpopsDt_EPS = 1.e-6;
+		this->MAX_DpopsDt_EPS = DEFAULT_FNORM_STOPPING;
 		this->beamH = 1.0;
 	}
 
