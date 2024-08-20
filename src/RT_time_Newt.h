@@ -194,8 +194,6 @@ public:
 				// mols[ispec].rad_trans[i].JExtHII will be zero if external emission will be taken from file
 			}
 		}
-		
-		if (lineWidth > DBL_EPSILON) find_blends(); // find overlapping lines
 
 		beta_LVG LVG_beta (beamH); 					// LVG escape probability, see beta_LVG.h
 
@@ -284,6 +282,7 @@ public:
 		double MaxRPopDiff = 0.0;
 		size_t levelWithMaxRPopDiff = 0;
 		size_t speciesWithMaxRPopDiff = 0;
+		bool blending_is_turned_off = true;
 		// integrate the kinetic equations system with the second order BDF method using variable time step (see Jannelli & Fazio 2006, Journal of Computational and Applied Mathematics, 191, 246)
 		do {
 			unsigned int iter_in = 1;
@@ -340,6 +339,12 @@ public:
 						break;
 					}
 					iter_in += 1;
+					if (MaxRPopDiff <= MAX_LOCAL_ACCURACY && blending_is_turned_off) {
+						bool there_are_blended_lines = false;
+						if (lineWidth > DBL_EPSILON) there_are_blended_lines = find_blends(); // find overlapping lines
+						if (there_are_blended_lines) MaxRPopDiff = 1.1 * MAX_LOCAL_ACCURACY;
+						blending_is_turned_off = false;
+					} 
 				} while (MaxRPopDiff > MAX_LOCAL_ACCURACY && iter_in <= MAX_NUM_INNER_STEPS);
 				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
