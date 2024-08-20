@@ -227,6 +227,116 @@ protected:
 							  (1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.betaHII_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII; 	// sum of internal and external radiation mean intensities
 	}
 
+	void get_A(vector <double> & A, beta_LVG& LVG_beta, molModel* mol) // fill the matrix A from the statistical equilibrium equations system A*pop=B
+	{
+		const size_t& n = mol->levels.size();
+
+		// A[i + j*n] - rate of transition from j-th to i-th level
+		// Collisional transitions
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
+		for (size_t i = 0; i < n; i++) {
+			A[i + i * n] = -mol->coll_trans[i][i];
+			for (size_t j = i + 1; j < n; j++) {
+				A[i + j * n] = mol->coll_trans[j][i];
+				A[j + i * n] = mol->coll_trans[i][j];
+			}
+		}
+
+		// Radiative transitions
+		double temp_var, Sf, beta, kabs;
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			compute_tau(i, mol);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
+			
+			const size_t& up = mol->rad_trans[i].up_level;
+			const size_t& low = mol->rad_trans[i].low_level;
+
+			temp_var = mol->rad_trans[i].Blu * mol->rad_trans[i].J;
+			A[up + low * n] += temp_var;                                   	// A[up][low] += Blu * J
+			A[low + low * n] -= temp_var;    									// A[low][low] -= Blu * J
+
+			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
+			A[low + up * n] += temp_var;                                   	// A[low][up] += Aul + Bul * J
+			A[up + up * n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
+		}
+	}
+
+	void get_A_Jac(vector <double> & A, vector <double> & Jac, beta_LVG& LVG_beta, molModel* mol) // fill the matrix A from the statistical equilibrium equations system A*pop=B, and Jacobian Jac from the non-linear system of equations Jac*dpop=-F
+	{
+		const size_t& n = mol->levels.size();
+
+		// A[i + j*n] - rate of transition from j-th to i-th level
+		// Collisional transitions
+		// Note that diagonal elements of C were computed in compute_C function in molModel.h, Cii = sum{k=1,Nlevel}(Cik)
+		for (size_t i = 0; i < n; i++) {
+			A[i + i * n] = -mol->coll_trans[i][i];
+			Jac[i + i * n] = A[i + i * n];
+			for (size_t j = i + 1; j < n; j++) {
+				A[i + j * n] = mol->coll_trans[j][i];
+				A[j + i * n] = mol->coll_trans[i][j];
+				Jac[i + j * n] = A[i + j * n];
+				Jac[j + i * n] = A[j + i * n];
+			}
+		}
+
+		// Radiative transitions
+		double temp_var, temp_var_Jac, Sf, beta, kabs;
+		for (size_t i = 0; i < mol->rad_trans.size(); i++) {
+			compute_tau(i, mol);
+			compute_J_S_beta(mol, i, LVG_beta, Sf, beta, kabs);
+			double common_multiplier = (mol->rad_trans[i].JExt - Sf) * LVG_beta.DbetaDtau(mol->rad_trans[i].tau) +
+					dust_HII_CMB_Jext_emission->HII_region_at_LOS * LVG_beta.DbetaHIIDtau_LOS(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII +
+					(1 - dust_HII_CMB_Jext_emission->HII_region_at_LOS) * LVG_beta.DbetaHIIDtau_pump(mol->rad_trans[i].tau, beamH) * mol->rad_trans[i].JExtHII;
+
+			const size_t& up = mol->rad_trans[i].up_level;
+			const size_t& low = mol->rad_trans[i].low_level;
+
+			double blend_demiss_dnlow = 0.0;								// derivative of emission coefficient on population of the lower level of radiative transition taking into account line blending
+			double blend_dkabs_dnlow = mol->rad_trans[i].Blu;				// derivative of absorption coefficient on population of the lower level of radiative transition taking into account line blending
+			double blend_demiss_dnup = mol->rad_trans[i].A;								// derivative of emission coefficient on population of the upper level of radiative transition taking into account line blending
+			double blend_dkabs_dnup = -mol->rad_trans[i].Bul;				// derivative of absorption coefficient on population of the upper level of radiative transition taking into account line blending
+			for (size_t j = 0; j < mol->rad_trans[i].blends.size(); j++) {
+				if (mol->idspec == mol->rad_trans[i].blends[j].ispec) {
+					const double vel_fac = mol->rad_trans[i].blends[j].fac;
+					if (low == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level) {
+						blend_demiss_dnlow += mol->rad_trans[mol->rad_trans[i].blends[j].id].A * vel_fac;
+						blend_dkabs_dnlow -= mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * vel_fac;
+					}
+					if (low == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level) blend_dkabs_dnlow += mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * vel_fac;
+					if (up == mol->rad_trans[mol->rad_trans[i].blends[j].id].up_level) {
+						blend_demiss_dnup += mol->rad_trans[mol->rad_trans[i].blends[j].id].A * vel_fac;
+						blend_dkabs_dnup -= mol->rad_trans[mol->rad_trans[i].blends[j].id].Bul * vel_fac;
+					}
+					if (up == mol->rad_trans[mol->rad_trans[i].blends[j].id].low_level) blend_dkabs_dnup += mol->rad_trans[mol->rad_trans[i].blends[j].id].Blu * vel_fac;
+				}
+			}
+
+			temp_var = mol->rad_trans[i].Blu * mol->rad_trans[i].J;
+			A[up + low * n] += temp_var;                                   	// A[up][low] += Blu * J
+			A[low + low * n] -= temp_var;    									// A[low][low] -= Blu * J
+
+			double dS_dnlow_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnlow - Sf * blend_dkabs_dnlow);	// derivative of source function on population of the lower level of radiative transition * (1 - beta)
+			if (fabs(kabs) > 0.0) dS_dnlow_beta *= (1. - beta) / kabs;
+			else dS_dnlow_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
+			double dtau_dnlow = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnlow;													// derivative of optical depth on population of the lower level of radiative transition
+			temp_var_Jac = (mol->levels[low].pop * mol->rad_trans[i].Blu - mol->levels[up].pop * mol->rad_trans[i].Bul) * (dS_dnlow_beta + dtau_dnlow * common_multiplier);
+			Jac[up + low * n] += temp_var + temp_var_Jac;
+			Jac[low + low * n] -= (temp_var + temp_var_Jac);
+
+			temp_var = (mol->rad_trans[i].A + mol->rad_trans[i].Bul * mol->rad_trans[i].J);
+			A[low + up * n] += temp_var;                                   	// A[low][up] += Aul + Bul * J
+			A[up + up * n] -= temp_var;       								// A[up][up] -= Aul + Bul * J , where Aul, Bul, Blu - Einstein coefficients, J - mean intensity
+
+			double dS_dnup_beta = HC4PI * invlineWidth * modelPhysPars::n_mol[mol->idspec] * (blend_demiss_dnup - Sf * blend_dkabs_dnup);	// derivative of source function on population of the upper level of radiative transition * (1 - beta)
+			if (fabs(kabs) > 0.0) dS_dnup_beta *= (1. - beta) / kabs;
+			else dS_dnup_beta *= 0.5 * modelPhysPars::NdV[mol->idspec] * lineWidth / (modelPhysPars::n_mol[mol->idspec]); // (1-b)/tau -> 0.5 for tau -> 0.0
+			double dtau_dnup = HC4PI * modelPhysPars::NdV[mol->idspec] * blend_dkabs_dnup;													// derivative of optical depth on population of the upper level of radiative transition
+			temp_var_Jac = (mol->levels[up].pop * mol->rad_trans[i].Bul - mol->levels[low].pop * mol->rad_trans[i].Blu) * (dS_dnup_beta + dtau_dnup * common_multiplier);
+			Jac[low + up * n] += temp_var + temp_var_Jac;
+			Jac[up + up * n] -= (temp_var + temp_var_Jac);
+		}
+	}
+
 	void compute_Tex(const size_t & i, molModel *mol)		// computes excitation temperature for radiative transition i
 	{
 		const size_t & up = mol->rad_trans[i].up_level;
@@ -349,7 +459,7 @@ protected:
 		return there_are_blends;
 	}
 
-	void Ng_acceleration(double pop[], vector <vector <double> > & oldpops, molModel *mol)
+	void Ng_acceleration(vector <double> & pop, vector <vector <double> > & oldpops, molModel *mol)
 	{
 		constexpr const size_t m = Ng_order + 1;
 
@@ -400,7 +510,7 @@ protected:
 		}
 	}
 
-	bool update_check_pops(molModel *mol, double pop[], size_t & speciesWithMaxRPopDiff, size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
+	bool update_check_pops(molModel *mol, vector <double> & pop, size_t & speciesWithMaxRPopDiff, size_t & levelWithMaxRPopDiff, double & MaxRPopDiff, const unsigned int & iter, vector <vector <double> > & oldpops_Ng, double & pop_norm)	// updates old populations and checks the populations, finds maximum relative difference of pops between iterations; computes norm of vector populations
 	{
 		double popRDiff;
 		bool there_were_bad_levels = false;
@@ -409,7 +519,7 @@ protected:
 		for (size_t i = 0; i < mol->levels.size(); i++) {
 			// find maximum relative difference of populations between succesive iterations
 			popRDiff = fabs((pop[i] - mol->levels[i].pop) / mol->levels[i].pop);
-			if (popRDiff > MaxRPopDiff && fabs(pop[i]) > MIN_POP_FOR_DIFF_CALC && i != 0 && i != mol->levels.size() - 1) { // note: the first and last levels are not taken into account because pop[0]=1-pop[1]-pop[2]-...-pop[n] and the last level population is usually low and may oscillate strongly
+			if (popRDiff > MaxRPopDiff && fabs(pop[i]) > MIN_POP_FOR_DIFF_CALC) {
 				MaxRPopDiff = popRDiff;
 				levelWithMaxRPopDiff = i + 1; // note conversion from 0-based level indexing to 1-based
 				speciesWithMaxRPopDiff = mol->idspec + 1; // note conversion from 0-based level indexing to 1-based
@@ -420,7 +530,7 @@ protected:
 			}
 		}
 		if (MaxRPopDiff < 0) there_were_bad_levels = true;
-		if (DoNg && iter > Ng_start && !there_were_bad_levels) {
+		if (DoNg && TIME_INTEGRATION_OF_KINETIC_EQUATIONS && iter > Ng_start && !there_were_bad_levels) {
 			vector<double> temp_pop;
 			for (size_t i = 0; i < mol->levels.size(); i++) temp_pop.push_back(max(pop[i], MIN_POP));
 			Ng_acceleration(pop, oldpops_Ng, mol);
