@@ -31,6 +31,7 @@ MAXIMUM_DpopDt = -1 # < 0 means that the code will use the default value for the
 MAXIMUM_NUMBER_OF_ITERATIONS = 50000
 BEAMING = [1.0, 10.0]
 LINE_WIDTH = 2.0 # [km/s]
+MOLECULAR_ABUNDANCE = 1.e-7 # wrt H2
 MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY = 1 * 1.496e+13 # [cm]
 MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY = 100 * 1.496e+13 # [cm]
 LIST_OF_TRANSITIONS = [
@@ -193,7 +194,7 @@ def prepare_input(pars, in_pops_file=None, out_pops_file=None):
         cin += str(pars.N_dV) + '\n'
     cin += "# Molecular abundance (wrt H2)\n"
     for _ in range(len(FILE_WITH_LAMDA_DATA)):
-        cin += str(1.e-7) + '\n'
+        cin += str(MOLECULAR_ABUNDANCE) + '\n'
     cin += "# Abundances of collision partners with respect to the total number of H2 molecules, the order is the same as in input LAMDA datafile:\n"
     '''for icoll in range(0, len(COLLISION_PARTNERS_FRACTIONS)):
         cin += str(COLLISION_PARTNERS_FRACTIONS[icoll]) + "\n"
@@ -329,7 +330,7 @@ def make_grid(output_filename="grid_results.txt"):
     ids = 0
     for N_dVi in SPECIFIC_COLUMN_DENSITIES:
         for nHi in HDENSITIES:
-            cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi
+            cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi / MOLECULAR_ABUNDANCE
             if MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY <= cloud_size <= MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY:
                 for Tgi in GAS_TEMPERATURES:
                     for Wdi in DUST_DILLUTION_FACTORS:
@@ -420,7 +421,7 @@ def make_grid_using_previous_solutions(output_filename="grid_results.txt"):
         for N_dVi in SPECIFIC_COLUMN_DENSITIES:
             Previous_nH = None
             for nHi in HDENSITIES:
-                cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi
+                cloud_size = N_dVi * LINE_WIDTH * 1.e5 / nHi / MOLECULAR_ABUNDANCE
                 if MINIMUM_CLOUD_SIZE_PROJECTED_ON_SKY <= cloud_size <= MAXIMUM_CLOUD_SIZE_PROJECTED_ON_SKY:
                     for Tgi in GAS_TEMPERATURES:
                         for Wdi in DUST_DILLUTION_FACTORS:
