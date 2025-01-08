@@ -1,7 +1,7 @@
 #pragma once
 #include "RT.h"
 
-class RT_time_Newt : public RT		// integrates kinetic equations for level populations over time; the non-linear system of equations at each time step is solved with simple iterations
+class RT_time : public RT		// integrates kinetic equations for level populations over time; the non-linear system of equations at each time step is solved with simple iterations
 {
 private:
 
@@ -417,9 +417,9 @@ public:
 		return 0;
 	}
 
-	RT_time_Newt() : RT()
+	RT_time() : RT()
 	{}
 
-	RT_time_Newt(istream & cin) : RT(cin)
+	RT_time(istream & cin) : RT(cin)
 	{}
 };
