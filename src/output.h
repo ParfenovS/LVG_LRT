@@ -65,10 +65,10 @@ void output_results(molModel *mod, string filename, ostream & cout) 	// output r
 	}
 
 	if (filename.length() > 1) {
-		ofstream fout;
-		fout.open(filename.c_str(), ios::out);
+		FILE *fout = fopen(filename.c_str(), "w");
+		if (fout == NULL) throw runtime_error("can't open file to save populations");
 		for (size_t i = 0; i < mod->levels.size(); i++)
-			fout << mod->levels[i].id << "\t" << mod->levels[i].pop << endl;
-		fout.close();
+			fprintf(fout, "%zu %.17e\n", mod->levels[i].id, mod->levels[i].pop);
+		fclose(fout);
 	}
 }
