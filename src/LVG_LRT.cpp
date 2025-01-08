@@ -7,14 +7,14 @@
 #include <type_traits>
 #include "molDataRead.h"
 #include "RT_statEquiv.h"
-#include "RT_time_Newt.h"
+#include "RT_time.h"
 #include "modelPhysPars.h"
 #include "output.h"
 
 int main(int argc, char* argv[])
 {
 	// choose whether to solve statistical equilibrium equations (with RT_statEquiv class) or integrate kinetic equations for level populations over time (with RT_time_Newt class)
-	typedef typename std::conditional<TIME_INTEGRATION_OF_KINETIC_EQUATIONS, RT_time_Newt, RT_statEquiv>::type RTclass;
+	typedef typename std::conditional<TIME_INTEGRATION_OF_KINETIC_EQUATIONS, RT_time, RT_statEquiv>::type RTclass;
 	RTclass *LRT = nullptr;
 
 	int LRT_failure = 1; // 0 - successful program execution; 1 - failure
