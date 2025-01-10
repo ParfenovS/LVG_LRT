@@ -59,7 +59,7 @@
     <ClInclude Include="..\src\RT.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\RT_time_Newt.h">
+    <ClInclude Include="..\src\RT_time.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="..\src\spline.h">
