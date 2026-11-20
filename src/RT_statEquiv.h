@@ -154,6 +154,7 @@ public:
 		}
 
 		vector <double> Fnorm_old(modelPhysPars::nSpecies);
+		vector <double> newton_rates(modelPhysPars::nSpecies);
 
 		vector <size_t> max_pop_id(modelPhysPars::nSpecies);
 		vector <vector <double> > fscale2(modelPhysPars::nSpecies);
@@ -187,6 +188,7 @@ public:
 		bool there_are_blended_lines = false;
 		do {
 			Fnorm = 0.0;
+			bool switch_to_simple_iteration = false;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 				double tempFnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
 				if (tempFnorm > Fnorm) Fnorm = tempFnorm;
@@ -206,7 +208,6 @@ public:
 					}
 				}
 				if (rate < 1.0) rate *= 0.9;
-				bool switch_to_simple_iteration = true;
 				if (rate > MIN_NEWT_SCALE) {
 					double rate1 = MIN_NEWT_SCALE;
 					double rate2 = rate;
@@ -217,7 +218,7 @@ public:
 					for (size_t refine_step = 0; refine_step < NUM_OF_NEWT_SCALE_GRID_REFINEMENTS; ++refine_step) {
 						do {
 							double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
-							if (temp_Fnorm < min_Fnorm) {
+							if (temp_Fnorm < 0.999 * min_Fnorm) {
 								min_Fnorm = temp_Fnorm;
 								rate = temp_rate;
 							}
@@ -232,17 +233,24 @@ public:
 
 					double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
 					if (Fnorm_old[ispec] > (MIN_FNORM_RELATIVE_DECREASE + 1) * temp_Fnorm) { 
-						for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = fma(dpop[ispec][i], rate, mols[ispec].levels[i].pop);
-						switch_to_simple_iteration = false;
+						newton_rates[ispec] = rate;
+					} else {
+						switch_to_simple_iteration = true;
 					}
 				}
-				if (switch_to_simple_iteration) { // use simple iteration if Newton step is too small or relative change in norm of Dpop/Dt is too small
+			}
+			if (switch_to_simple_iteration) { // use simple iteration if Newton step is too small or relative change in norm of Dpop/Dt is too small
+				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
 					populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
-					solveStatEqSuccess = solve_eq_sys(A[ispec].data(), pop[ispec].data(), &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
+					size_t solveStatEqSuccess = solve_eq_sys(A[ispec].data(), pop[ispec].data(), &mols[ispec]);				// solve statistical equilibrium equation with LU decomposition
 					if (solveStatEqSuccess != 0) {						// the solution can't be found
 						cerr << "#error: simple iteration solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 						return 1;
 					}
+				}
+			} else {
+				for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
+					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = fma(dpop[ispec][i], newton_rates[ispec], mols[ispec].levels[i].pop);
 				}
 			}
 			double dummy_pop_norm = 1.e-30;
