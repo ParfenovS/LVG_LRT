@@ -218,7 +218,7 @@ public:
 					for (size_t refine_step = 0; refine_step < NUM_OF_NEWT_SCALE_GRID_REFINEMENTS; ++refine_step) {
 						do {
 							double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
-							if (temp_Fnorm < 0.999 * min_Fnorm) {
+							if (temp_Fnorm < min_Fnorm) {
 								min_Fnorm = temp_Fnorm;
 								rate = temp_rate;
 							}
