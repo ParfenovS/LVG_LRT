@@ -237,6 +237,8 @@ public:
 					} else {
 						switch_to_simple_iteration = true;
 					}
+				} else {
+					switch_to_simple_iteration = true;
 				}
 			}
 			if (switch_to_simple_iteration) { // use simple iteration if Newton step is too small or relative change in norm of Dpop/Dt is too small
