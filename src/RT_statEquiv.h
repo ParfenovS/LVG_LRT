@@ -185,12 +185,16 @@ public:
 
 		unsigned int iter = 1;
 		double Fnorm = 0.0;
+		double tempFnorm = 0.0;
 		bool there_are_blended_lines = false;
+		double rate = 1.0;
+		bool switch_to_simple_iteration = false;
+		double dummy_pop_norm = 1.e-30;
 		do {
 			Fnorm = 0.0;
-			bool switch_to_simple_iteration = false;
+			switch_to_simple_iteration = false;
 			for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {
-				double tempFnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
+				tempFnorm = populate_matrix_vector(A[ispec], Jac[ispec], dpop[ispec], pop[ispec], fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
 				if (tempFnorm > Fnorm) Fnorm = tempFnorm;
 				Fnorm_old[ispec] = tempFnorm;
 				//double cond_number = get_condition_number(A[ispec].data(), &mols[ispec]);
@@ -199,10 +203,10 @@ public:
 					cerr << "#error: Newton solve_eq_sys failed, info = " << solveStatEqSuccess << endl;
 					return 1;
 				}
-				double rate = 1.0;
+				rate = 1.0;
 				// see kinsol package for the step length calculations according to the bounds on the solution vector, https://github.com/LLNL/sundials/tree/main/src/kinsol
 				for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-					double cur_pop = dpop[ispec][i] + mols[ispec].levels[i].pop;
+					const double & cur_pop = dpop[ispec][i] + mols[ispec].levels[i].pop;
 					if ((cur_pop <= 0.0 || cur_pop > 1.0) && fabs(dpop[ispec][i]) > 0.0) {
 						rate = min(rate, mols[ispec].levels[i].pop / fabs(dpop[ispec][i]));
 					}
@@ -213,13 +217,13 @@ public:
 					double rate2 = rate;
 					double rate_step = (rate2 - rate1) / NUM_OF_NEWT_SCALE_GRID_POINTS;
 					double temp_rate = rate1;
-					double min_Fnorm = 1.e100;
+					double min_Fnorm = DBL_MAX * 0.999;
 
 					for (size_t refine_step = 0; refine_step < NUM_OF_NEWT_SCALE_GRID_REFINEMENTS; ++refine_step) {
 						do {
-							double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
-							if (temp_Fnorm < min_Fnorm) {
-								min_Fnorm = temp_Fnorm;
+							tempFnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], temp_rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
+							if (tempFnorm < min_Fnorm) {
+								min_Fnorm = tempFnorm;
 								rate = temp_rate;
 							}
 							temp_rate += rate_step;
@@ -228,11 +232,11 @@ public:
 						rate2 = min(rate2, rate + rate_step);
 						rate_step = (rate2 - rate1) / NUM_OF_NEWT_SCALE_GRID_POINTS;
 						temp_rate = rate1;
-						min_Fnorm = 1.e100;
+						min_Fnorm = DBL_MAX * 0.999;
 					}
 
-					double temp_Fnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
-					if (Fnorm_old[ispec] > (MIN_FNORM_RELATIVE_DECREASE + 1) * temp_Fnorm) { 
+					tempFnorm = getF(A[ispec], Jac[ispec], pop[ispec], dpop[ispec], rate, fscale2[ispec], max_pop_id[ispec], LVG_beta, &mols[ispec]);
+					if (Fnorm_old[ispec] > (MIN_FNORM_RELATIVE_DECREASE + 1) * tempFnorm) { 
 						newton_rates[ispec] = rate;
 					} else {
 						switch_to_simple_iteration = true;
@@ -255,7 +259,6 @@ public:
 					for (size_t i = 0; i < mols[ispec].levels.size(); i++) pop[ispec][i] = fma(dpop[ispec][i], newton_rates[ispec], mols[ispec].levels[i].pop);
 				}
 			}
-			double dummy_pop_norm = 1.e-30;
 			levelWithMaxRPopDiff = 0;
 			speciesWithMaxRPopDiff = 0;
 			MaxRPopDiff = -1.0;
