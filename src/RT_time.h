@@ -265,7 +265,7 @@ public:
 		for (size_t ispec = 0; ispec < modelPhysPars::nSpecies; ispec++) {;
 			max_pop_id[ispec] = 0;
 			double max_pop = mols[ispec].levels[0].pop;
-			for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
+			for (size_t i = 1; i < mols[ispec].levels.size(); i++) {
 				if (mols[ispec].levels[i].pop > max_pop) {
 					max_pop = mols[ispec].levels[i].pop;
 					max_pop_id[ispec] = i;
