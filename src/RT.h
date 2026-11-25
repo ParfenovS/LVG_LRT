@@ -539,7 +539,7 @@ protected:
 		}
 		double pops_sum = 0;
 		for (size_t i = mol->levels.size(); i-- > 0; ) {
-			mol->levels[i].pop = max(pop[i], MIN_POP);
+			if (!isnan(pop[i]) && pop[i] > 0.0 && pop[i] < 1.0) mol->levels[i].pop = min(max(pop[i], MIN_POP), MAX_POP);
 			pops_sum += mol->levels[i].pop;
 		}
 		pops_sum = partition_function_ratio[mol->idspec] / pops_sum;
