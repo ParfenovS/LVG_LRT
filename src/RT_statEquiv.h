@@ -162,8 +162,9 @@ public:
 			Fnorm_old[ispec] = 1.e60;
 			max_pop_id[ispec] = 0;
 			fscale2[ispec].resize(mols[ispec].levels.size());
-			for (size_t i = 0; i < mols[ispec].levels.size(); i++) {
-				double max_pop = mols[ispec].levels[0].pop;
+			fscale2[ispec][0] = 1.0;
+			double max_pop = mols[ispec].levels[0].pop;
+			for (size_t i = 1; i < mols[ispec].levels.size(); i++) {
 				if (mols[ispec].levels[i].pop > max_pop) {
 					max_pop = mols[ispec].levels[i].pop;
 					max_pop_id[ispec] = i;
